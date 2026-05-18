@@ -1,7 +1,7 @@
 ---
 doc_type: prd
 gate: B
-version: v1.0
+version: v1.1
 date: 2026-05-18
 status: Draft
 author: sungjun.choi@board-playground.dev
@@ -17,11 +17,12 @@ related:
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v1.1 | 2026-05-18 | Agent (analyst) | 로컬 전용 실행 방침 반영 — 제품 개요·의존성·Open Questions 조정 |
 | v1.0 | 2026-05-18 | Agent (analyst) | 초안 — RealWorld 스펙 기반 기능 정의·MVP Cut |
 
 ## 1. 제품 개요
 
-Conduit는 Medium.com 클론 블로그 플랫폼으로, RealWorld 프로젝트 공식 스펙을 100% 준수하는 풀스택 애플리케이션이다. 사용자가 아티클을 작성·공유하고, 다른 사용자를 팔로우하며, 댓글과 즐겨찾기로 상호작용하는 소셜 블로그 서비스를 제공한다.
+Conduit는 Medium.com 클론 블로그 플랫폼으로, RealWorld 프로젝트 공식 스펙을 100% 준수하는 풀스택 애플리케이션이다. 사용자가 아티클을 작성·공유하고, 다른 사용자를 팔로우하며, 댓글과 즐겨찾기로 상호작용하는 소셜 블로그 서비스를 제공한다. 현 단계에서는 로컬 개발 환경(localhost)에서만 실행하며, 추후 클라우드 배포로 확장할 수 있는 구조를 갖춘다.
 
 ## 2. 사용자 가치
 
@@ -206,16 +207,17 @@ Conduit는 Medium.com 클론 블로그 플랫폼으로, RealWorld 프로젝트 �
 
 | 항목 | 설명 |
 |---|---|
-| Bootstrap 4 테마 | CDN (`https://demo.productionready.io/main.css`) 또는 로컬 번들 |
-| Ionicons | 아이콘 CDN |
-| Google Fonts | Titillium Web, Source Serif Pro 등 |
+| Bootstrap 4 테마 | 로컬 번들 우선 (CDN fallback: `https://demo.productionready.io/main.css`) |
+| Ionicons | 아이콘 CDN (로컬 환경 인터넷 연결 가정) |
+| Google Fonts | Titillium Web, Source Serif Pro 등 (CDN) |
 | 마크다운 렌더러 | 아티클 본문 렌더링 (라이브러리 선택은 Gate C) |
 
-> 외부 API 의존 없음 — 인증·데이터 모두 자체 백엔드.
+> 외부 API 의존 없음 — 인증·데이터 모두 자체 백엔드. 클라우드 서비스 의존 없음 (로컬 전용).
 
 ## 7. Open Questions
 
 - 프론트엔드 프레임워크 선택 (React / Vue / Svelte 등) — Gate C
 - 백엔드 프레임워크 선택 (Express / Spring Boot / Django 등) — Gate C
-- DB 선택 (PostgreSQL / SQLite) — Gate C
+- DB: SQLite 우선 (로컬 전용 — 설치 부담 최소), ORM 추상화로 추후 PostgreSQL 전환 경로 — Gate C
 - 마크다운 라이브러리 선택 (marked / remark 등) — Gate C
+- 배포 전략은 현 단계 제외 — 추후 확장 시 결정

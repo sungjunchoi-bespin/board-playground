@@ -1,7 +1,7 @@
 ---
 doc_type: brief
 gate: A
-version: v1.0
+version: v1.1
 date: 2026-05-18
 status: Draft
 author: sungjun.choi@board-playground.dev
@@ -17,11 +17,12 @@ related:
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v1.1 | 2026-05-18 | Agent (analyst) | 로컬 전용 실행 방침 반영 — 배포 제외, 확장성 유지 |
 | v1.0 | 2026-05-18 | Agent (analyst) | 초안 — RealWorld 스펙 기반 Project Brief 작성 |
 
 ## 1. 한 줄 정의
 
-Medium.com 클론 블로그 플랫폼 "Conduit"를 RealWorld 스펙에 따라 풀스택으로 구현한다.
+Medium.com 클론 블로그 플랫폼 "Conduit"를 RealWorld 스펙에 따라 풀스택으로 구현한다. 현재 단계에서는 로컬 개발 환경에서만 실행하며, 추후 빌드·배포로 확장할 수 있는 구조를 갖춘다.
 
 ## 2. 배경 / 문제 정의
 
@@ -53,6 +54,9 @@ RealWorld 프로젝트는 Todo 앱 수준을 넘어 실제 서비스 수준의 �
 
 ## 5. 비목표 (Out of Scope)
 
+- 클라우드 배포 (현 단계에서는 로컬 실행만 — 추후 확장)
+- Docker/컨테이너 (현 단계 불필요 — 추후 확장)
+- CI/CD 파이프라인 (현 단계 불필요 — 추후 확장)
 - 실시간 알림 (WebSocket/SSE)
 - 소셜 로그인 (OAuth)
 - 검색 엔진 (Elasticsearch 등)
@@ -68,7 +72,7 @@ RealWorld 프로젝트는 Todo 앱 수준을 넘어 실제 서비스 수준의 �
 | 기획·설계 (Gate A~C) | 1일 | 01~13 산출물 |
 | Sprint 1 — 인증·프로필 | 2~3일 | 회원가입/로그인/프로필 |
 | Sprint 2 — 아티클·태그 | 2~3일 | CRUD/피드/태그/즐겨찾기 |
-| Sprint 3 — 댓글·마무리 | 2일 | 댓글/E2E 테스트/배포 |
+| Sprint 3 — 댓글·마무리 | 2일 | 댓글/E2E 테스트/로컬 통합 검증 |
 
 ## 7. 리스크 (초기 식별)
 
@@ -81,5 +85,5 @@ RealWorld 프로젝트는 Todo 앱 수준을 넘어 실제 서비스 수준의 �
 ## 8. Open Questions
 
 - 기술 스택 (프론트엔드·백엔드) 선택은 Gate C에서 결정
-- DB 선택 (PostgreSQL vs SQLite) 확정 필요
-- 배포 환경 (Vercel, Railway, Docker 등) 확정 필요
+- DB 선택 (SQLite 우선 — 로컬 실행 용이, 추후 PostgreSQL 전환 가능한 구조)
+- 배포 환경은 현 단계 제외 — 추후 확장 시 결정 (Vercel, Railway, Docker 등)

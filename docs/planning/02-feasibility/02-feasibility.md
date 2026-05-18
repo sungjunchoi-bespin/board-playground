@@ -1,7 +1,7 @@
 ---
 doc_type: feasibility
 gate: A
-version: v1.0
+version: v1.1
 date: 2026-05-18
 status: Draft
 author: sungjun.choi@board-playground.dev
@@ -17,6 +17,7 @@ related:
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v1.1 | 2026-05-18 | Agent (analyst) | 로컬 전용 실행 방침 반영 — 인프라 비용 $0, 배포 후순위 |
 | v1.0 | 2026-05-18 | Agent (analyst) | 초안 — 기술·비용·대안 타당성 검토 |
 
 ## 1. 시장·환경 검토
@@ -34,7 +35,7 @@ related:
 - **인증**: JWT 기반 — 표준 라이브러리로 구현 용이
 - **데이터 모델**: User, Article, Comment, Tag, Follow, Favorite — 6개 엔티티로 관계가 명확
 - **프론트엔드**: 9개 라우트, Bootstrap 4 테마 — 추가 디자인 불필요
-- **CORS**: 공식 스펙에 명시 — 프론트·백엔드 분리 배포 가능
+- **CORS**: 공식 스펙에 명시 — 로컬에서도 FE/BE 포트 분리 시 필요, 추후 분리 배포에도 대응
 
 **기술적 난이도**: 중하 — 도메인이 단순하고 스펙이 명확하여 설계→구현 직선 경로
 
@@ -43,8 +44,8 @@ related:
 | 항목 | 추정 | 비고 |
 |---|---|---|
 | 개발 인력 | 1인 (에이전트 지원) | 풀스택 |
-| 기간 | 약 1~2주 | 기획~배포 전체 |
-| 인프라 비용 | $0~5/월 | 무료 tier 활용 (Vercel/Railway/Render) |
+| 기간 | 약 1~2주 | 기획~로컬 완성 전체 |
+| 인프라 비용 | $0 | 로컬 전용 — 추후 클라우드 배포 시 무료 tier 활용 가능 |
 | 외부 의존 | 없음 | 자체 인증, 자체 DB |
 | 라이선스 | MIT | RealWorld 프로젝트 라이선스 |
 

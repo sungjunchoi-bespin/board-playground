@@ -1,7 +1,7 @@
 ---
 doc_type: srs
 gate: B
-version: v1.0
+version: v1.1
 date: 2026-05-18
 status: Draft
 author: sungjun.choi@board-playground.dev
@@ -17,6 +17,7 @@ related:
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v1.1 | 2026-05-18 | Agent (analyst) | 로컬 전용 실행 방침 반영 — 가정·비기능 요구사항 조정 |
 | v1.0 | 2026-05-18 | Agent (analyst) | 초안 — RealWorld 스펙 기반 기능·비기능 요구사항 정의 |
 
 ## 1. 범위 / 가정
@@ -30,7 +31,8 @@ related:
 ### 가정
 
 - 기술 스택은 Gate C에서 확정 (프론트엔드·백엔드·DB)
-- 배포 환경은 무료 tier 클라우드 (Vercel/Railway/Render 등)
+- **로컬 실행 전용**: 개발자 머신(localhost)에서 FE·BE·DB 모두 기동. 클라우드 배포는 현 단계 범위 밖이나, 추후 배포 가능한 아키텍처(환경 변수 분리, 3-tier 구조)를 유지한다
+- DB는 로컬 파일 기반(SQLite 등) 우선 고려 — 설치 부담 최소화. ORM/추상 계층으로 추후 PostgreSQL 전환 가능하게 설계
 - 이미지 업로드 없음 — URL 입력 방식
 - 2024/08/16 이후 변경 사항 반영: List Articles / Feed 엔드포인트에서 body 미반환
 
@@ -303,7 +305,7 @@ related:
 ### R-N-04: CORS
 
 - **우선순위**: P0
-- **설명**: 모든 API 엔드포인트에서 CORS를 지원한다.
+- **설명**: 모든 API 엔드포인트에서 CORS를 지원한다. 로컬 실행 시 FE(예: localhost:5173)와 BE(예: localhost:3000) 포트가 다르므로 CORS 필수. 추후 분리 배포에도 동일 설정 재사용.
 - **Acceptance**: Given 다른 origin에서의 요청, When API 호출, Then CORS 헤더 포함
 - **테스트 시나리오**:
   - 정상: 다른 origin → Access-Control-Allow-Origin 포함 (성공)
@@ -387,3 +389,4 @@ User (N) ──< Favorite >── (N) Article
 - Article slug 중복 처리 전략 (suffix 추가 vs UUID 포함)
 - 비밀번호 해싱 알고리즘 선택 (bcrypt vs argon2)
 - JWT 만료 시간 정책
+- DB: SQLite 우선 (로컬 실행 편의) — ORM 추상화로 추후 PostgreSQL 전환 경로 확보
