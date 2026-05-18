@@ -1,4 +1,4 @@
-# board-playground — 로컬에서 켜기
+# Conduit (RealWorld) — 로컬에서 켜기
 
 > **목적**: 이 저장소를 처음 clone한 사람이 *이 파일 1개*만 따라 하면 dev/stg/prod 3 profile 모두 로컬에서 부팅 가능하도록 한다.
 > **정본 위치**: 이 파일은 newProject 루트의 *유저 facing* 정본. 부팅 자산 *정의*의 SoT는 `docs/planning/12-scaffolding/<lang>.md` §7 (평면 명명, `file-numbering.md` §3.2). 다국어 newProject는 lang별 파일 모두가 SoT (예: `typescript.md` + `java.md`). 본 LOCAL.md와 lang별 12-scaffolding은 매 PR에서 동기 갱신된다 (ADR-0037 v1.1 + ADR-0040).
@@ -12,6 +12,7 @@
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v0.2 | 2026-05-18 | Agent (architect) | 첫 채움 — 12-scaffolding/typescript.md §5~§7 기반 profile별 부팅 명령·자산 작성 |
 | v0.1 | 2026-05-18 | Sungjun Choi | 초안 — install.sh가 LOCAL.template.md를 카피해 생성. 첫 채움은 12-scaffolding §7 작성 직후. |
 | v0.2-template | 2026-05-16 | yongtae.cho@bespinglobal.com | template 자체 보강 (test-case-3 PR #37·#38 회귀 흡수, ADR-0040 v1.1, **stack-agnostic**): §1.5 *사전* 함정 안내 박스 신설(monorepo+root .env / ORM 최초 migration / SPA 정적 서버 3종), §2 단계 4 push vs migrate init 분기, §3.2·3.3 실제 동작 stg/prod 명령 패턴, §5.3·5.4 cwd 함정 troubleshooting. **언어 일반화** — §1.5.1 해결 패턴 (a)~(d): Java/Spring `spring.profiles.active`·Python `python-dotenv`/Pydantic·Go `godotenv`·Node `dotenv-cli` 4개 동치 + symlink fallback. §1.5.2 ORM에 Prisma·TypeORM·SQLAlchemy·JPA(Hibernate)·Flyway·Liquibase 사례 포함. §3.2·3.3·5.4 예시도 Node와 Java 양 stack 명시. |
 | v0.3-template | 2026-05-16 | yongtae.cho@bespinglobal.com | §4 부팅 자산 표 분리 (ADR-0037 v1.2 정합) — "DB migrations" 단일 행 → "스키마 적용 (dev iteration)" + "DB migrations (stg/prod release)" 2행. dev iteration용은 Prisma `db push`·TypeORM `synchronize`·Hibernate `ddl-auto`·SQLAlchemy `create_all`·Alembic `upgrade head` 류, stg/prod release용은 정식 migration 파일 디렉토리(prisma/migrations·flyway·alembic/versions). 두 흐름이 다른 자산임을 LOCAL.template와 scaffolding.schema 양쪽에서 명시. lockfile·설치/seed scripts·부팅 명령 예시도 Python(poetry/uv)·Java(gradle) 사례 추가. |
@@ -26,11 +27,11 @@
 
 > 본 절은 12-scaffolding §1 디렉토리 트리 + §2 패키지 명명 규칙에서 도출.
 
-- **언어/런타임**: {{예: Node.js 20 LTS, Python 3.12, Java 21, ...}}
-- **패키지 매니저**: {{예: pnpm 9, uv, gradle wrapper, ...}}
-- **컨테이너 (선택)**: {{Docker 24+, docker-compose v2, ...}}
-- **DB**: {{PostgreSQL 16, MySQL 8, SQLite, ...}}
-- **OS 가정**: {{macOS / Linux / WSL2}}
+- **언어/런타임**: Node.js 20 LTS
+- **패키지 매니저**: pnpm 9
+- **컨테이너 (선택)**: 현 단계 미사용 (추후 Docker 확장 가능)
+- **DB**: SQLite (dev), PostgreSQL (stg/prod — 추후)
+- **OS 가정**: macOS / Linux / WSL2
 
 ---
 
@@ -64,7 +65,7 @@
   - 단점: `.example` 파일 수가 N\*3로 늘어남 — §5.2 troubleshooting과 §4 자산 표가 N\*3 분량 lint 필요
   - 적용 예: 본 template 권고 — 풀스택 (FE Vite/Next + BE Spring/Rails/Django) monorepo
 
-본 프로젝트 채택: `{{(a)/(b)/(c)/(d)/(e) 중 1개 또는 N/A — 단일 패키지}}`
+본 프로젝트 채택: **(e) 워크스페이스별 .env 완전 분리** — `frontend/.env.{dev,stg,prod}.example` + `backend/.env.{dev,stg,prod}.example` (2 workspace × 3 profile = 6벌)
 
 ### 1.5.2 ORM 최초 migration 부재 (3분류 모델)
 
@@ -86,10 +87,9 @@
     - **GORM (Go)** — 앱 시작 코드에 `db.AutoMigrate(&Model{})` 호출
 - **(c) N/A** — ORM/스키마 자체 없음 (CLI-only, frontend-only, file-system store 등)
 
-본 프로젝트 채택 분류: `{{(a) 분리형 / (b) 단일 메커니즘 / (c) N/A 중 1개}}`
-- (a) 채택 시 — dev: `{{명령}}`, stg/prod: `{{명령}}`
-- (b) 채택 시 — 부팅 명령 (§3 참조): `{{명령}}`, 자동 migrate 메커니즘: `{{예: spring.flyway.enabled=true / Database.Migrate() on startup}}`
-- (c) 채택 시 — 사유: `{{예: CLI-only, no DB}}`
+본 프로젝트 채택 분류: **(a) 분리형** — Prisma
+- dev: `pnpm --filter backend prisma db push` (schema.prisma → DB 직접 동기)
+- stg/prod: `pnpm --filter backend prisma migrate deploy` (prisma/migrations/ 정식 파일 적용)
 
 ### 1.5.3 stg/prod 부팅용 정적 서버 가정 (SPA frontend 한정)
 
@@ -231,8 +231,7 @@ cat <gradlew 위치>/settings.gradle* 2>/dev/null | grep -E 'rootProject.name|^i
 
 원칙: **wrapper/CLI가 module 안에 있고 parent 설정이 module을 포함하지 않으면, module 자체가 root이고 multi-project syntax는 미존재 경로**.
 
-본 프로젝트 채택: `{{multi-project root build / standalone module build / 단일 stack(N/A) 중 1개}}`
-- 채택 호출 패턴: `{{예: ./gradlew :backend:dependencies (multi-project) / (cd backend && ./gradlew dependencies) (standalone) / N/A}}`
+본 프로젝트 채택: **단일 stack (N/A)** — pnpm workspace로 FE/BE 모두 Node.js. `pnpm install` 한 번으로 전체 의존성 설치.
 
 ---
 
@@ -241,54 +240,27 @@ cat <gradlew 위치>/settings.gradle* 2>/dev/null | grep -E 'rootProject.name|^i
 ```bash
 # 1) clone
 git clone <repo-url>
-cd <repo-name>
+cd board-playground
 
-# 2) 의존성 설치
-#    멀티 stack인 경우 각 stack의 wrapper/CLI를 *그 위치*에서 호출 (§1.5.5).
-#    Gradle/Maven 채택 시 wrapper 위치 + settings.gradle (또는 pom.xml `<modules>`) 검사 후 결정:
-#      - multi-project root build (parent가 module을 include): `./gradlew :module:task`
-#      - standalone module build (wrapper가 module 안 + parent 설정 없음): `(cd module && ./gradlew task)` 또는 `./module/gradlew -p module task`
-{{설치 명령 — 단일 stack 예: `pnpm install --frozen-lockfile`. 멀티 stack 예: 각 stack별로 1줄씩 — `pnpm install --frozen-lockfile` + `(cd backend && ./gradlew dependencies)` 또는 `./backend/gradlew -p backend dependencies`}}
+# 2) 의존성 설치 (pnpm workspace — root에서 한 번)
+pnpm install
 
-# 3) 환경 변수 파일 준비 — profile별로 1벌씩
+# 3) 환경 변수 파일 준비 — (e) 워크스페이스별 .env 분리 (2 workspace × 3 profile = 6벌)
+cp frontend/.env.dev.example  frontend/.env
+cp backend/.env.dev.example   backend/.env
+# stg/prod 프로파일은 별도 .env 파일로 전환 후 실행 (§3.2, §3.3 참조)
 #
-#    §1.5.1 채택 패턴에 따라 분기:
-#
-#    (단일 패키지 / (a)~(d) 채택 — 루트 .env 사용):
-cp .env.dev.example  .env.dev
-cp .env.stg.example  .env.stg
-cp .env.prod.example .env.prod
-#
-#    (e) 채택 시 — 워크스페이스별 .env 완전 분리 (워크스페이스 N개면 N*3벌):
-# cp frontend/.env.dev.example  frontend/.env.dev
-# cp frontend/.env.stg.example  frontend/.env.stg
-# cp frontend/.env.prod.example frontend/.env.prod
-# cp backend/.env.dev.example   backend/.env.dev
-# cp backend/.env.stg.example   backend/.env.stg
-# cp backend/.env.prod.example  backend/.env.prod
-#
-# 각 .env.{dev,stg,prod} 안의 시크릿(JWT_SECRET·DB_PASSWORD 등)을 실제 값으로 채움
-# 각 profile별로 다른 값 사용 권장. JWT_SECRET은 알고리즘이 요구하는 최소 길이 준수 (HS256 = 32자)
+# 각 .env 안의 시크릿(JWT_SECRET 등)을 실제 값으로 채움
+# JWT_SECRET은 HS256 최소 32자 이상 권장
 
-# 4) DB 스키마 적용 (dev profile, 최초 1회) — §1.5.2 분류에 따라 분기
-# (a) 분리형 채택 시 — dev 빠른 동기 + 정식 migration 분리 호출:
-{{최초 dev 셋업 명령 — 예: pnpm prisma:push:dev    # = prisma db push --skip-generate}}
-# 정식 migration 흐름 시작 (최초 1회만, 이후엔 stg/prod에서 migrate 사용):
-#   {{예: pnpm migrate:init    # = prisma migrate dev --name init}}
-# ⚠️ 함정: 'migrate deploy'·'flyway migrate' CLI 류는 *기존 migration 파일만* 적용.
-#    migrations/ 비어 있으면 DB 빈 상태로 남음.
-#
-# (b) 단일 메커니즘(부팅 통합) 채택 시 — 별도 명령 없음. §3 dev 부팅이 곧 migrate:
-#   예) Spring Boot + Flyway integration: `./gradlew bootRun --args='--spring.profiles.active=dev'`
-#       부팅 로그에서 `Flyway Community Edition ... by Redgate` + `Migrating schema "public" to version "X"` 확인
-#   ⚠️ 함정: `./gradlew flywayMigrate` 같은 Gradle 태스크 호출 금지 — 그 태스크는 별도 `org.flywaydb.flyway`
-#           플러그인 도입 시에만 존재하고 Spring Boot의 `spring.flyway.*` 설정과 별 컨피그 필요.
-#           Spring Boot가 부팅 시 자동 적용하므로 redundant.
-#
-# (c) N/A 채택 시 — 이 단계 자체 skip
+# 4) DB 스키마 적용 (dev profile, 최초 1회) — (a) 분리형 Prisma
+pnpm --filter backend prisma db push
+# ⚠️ 정식 migration 흐름은 stg/prod 배포 시:
+#   pnpm --filter backend prisma migrate dev --name init  (최초 1회)
+#   pnpm --filter backend prisma migrate deploy           (이후)
 
-# 5) seed 데이터 (dev profile)
-{{seed 명령 — 예: pnpm seed:dev    # monorepo는 dotenv -e ../.env.dev -- 래핑됨, §1.5.1}}
+# 5) seed 데이터 (선택 — 추후 구현 시)
+# pnpm --filter backend prisma db seed
 ```
 
 ---
@@ -300,69 +272,62 @@ cp .env.prod.example .env.prod
 ### 3.1 dev profile (로컬 개발)
 
 ```bash
-# 단일 패키지 / (a)~(d) 채택 — 단일 명령
-{{dev 부팅 명령 — 예: pnpm dev:local / SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun}}
+# (e) 워크스페이스 분리 — 터미널 2개로 각각 실행 (hot reload O)
 
-# (e) 채택 — 워크스페이스 분리 시 2 변형 권고
-# 옵션 A: 워크스페이스 직접 실행 (각 워크스페이스 1터미널씩 — hot reload O)
-#   {{예: SPRING_PROFILES_ACTIVE=dev ./gradlew :backend:bootRun        # 8080}}
-#   {{예: pnpm --filter @app/frontend dev                                # 5173}}
-# 옵션 B: docker-compose (DB 포함 통합 기동 — N개 워크스페이스를 1명령으로)
-#   {{예: docker compose -f docker-compose.dev.yml --env-file backend/.env.dev up}}
+# 터미널 1: backend (port 3000)
+cp backend/.env.dev.example backend/.env
+pnpm --filter backend prisma db push
+pnpm --filter backend dev
+
+# 터미널 2: frontend (port 5173)
+cp frontend/.env.dev.example frontend/.env
+pnpm --filter frontend dev
 ```
 
-- 기대 출력: `{{ready 신호 — 예: :3000 listening / Started ConduitApplication ... profile [dev]}}`
-- 환경 변수 출처: `.env.dev` *(또는 (e) 채택 시: `{{workspace}}/.env.dev` 워크스페이스 수만큼)*
-- DB: `{{dev DB 위치 — 예: localhost:5432/myapp_dev}}`
-- Hot reload: {{O / X}}
+- 기대 출력: backend `listening on port 3000` / frontend `Local: http://localhost:5173/`
+- 환경 변수 출처: `backend/.env` (from `.env.dev.example`) + `frontend/.env` (from `.env.dev.example`)
+- DB: `backend/dev.db` (SQLite 파일)
+- Hot reload: O (tsx watch + vite HMR)
 
 ### 3.2 stg profile (스테이징 — 로컬에서 stg 환경 흉내)
 
 ```bash
-# 빌드 → 실행 (stg는 빌드 산출물 기반, watch 모드 없음)
-{{빌드 명령 — 예: pnpm build / ./gradlew build / poetry build}}
+# backend
+cp backend/.env.stg.example backend/.env
+pnpm --filter backend prisma migrate deploy
+pnpm --filter backend build
+pnpm --filter backend start:stg
 
-# 단일 패키지 / (a)~(d) 채택 — 단일 실행
-{{stg 실행 명령 — 예: pnpm start:stg / SPRING_PROFILES_ACTIVE=stg java -jar build/libs/app.jar}}
-
-# (e) 채택 — 워크스페이스 분리 시 2 변형:
-# 옵션 A: 로컬 실행 (각 워크스페이스 1터미널)
-#   {{backend — 예: SPRING_PROFILES_ACTIVE=stg java -jar backend/build/libs/app.jar    # 8080}}
-#                  또는 Node: dotenv -e backend/.env.stg -- node backend/dist/server.js
-#   {{frontend 정적 (SPA만) — 예: pnpm --filter @app/frontend exec vite preview --port 4173}}
-# 옵션 B: docker-compose (canonical — workspace별 .env.stg를 compose env_file로 주입)
-#   {{예: docker compose -f docker-compose.stg.yml --env-file backend/.env.stg up}}
+# frontend
+cp frontend/.env.stg.example frontend/.env
+pnpm --filter frontend build
+pnpm --filter frontend preview
 ```
 
-- 기대 출력: `{{ready 신호 — 예: :3000 listening / Started ... profile [stg] / Accepting connections at http://localhost:4173}}`
-- 환경 변수 출처: `.env.stg` *(또는 (e) 채택 시: `backend/.env.stg` + `frontend/.env.stg` 등 워크스페이스 수만큼)*
-- DB: `{{stg DB 위치 — 또는 'dev DB 공유' 명시}}`
-- Hot reload: 보통 X (빌드 산출물 기반)
-- ⚠️ 흔한 함정 (§1.5.3 참조): `serve` 같은 별 정적 서버 미설치 / `NODE_ENV=staging`만 inline 셋팅 시 다른 env 누락 → 빌드 도구 기본 preview + `dotenv -e .env.stg` 권장. JWT_SECRET 등 시크릿 평문 금지 — env injection
-- **단일 환경 운영 시**: 본 절을 "N/A — stg=prod 공유 운영"으로 표기
+- 기대 출력: backend `listening on port 3000` / frontend `Local: http://localhost:4173/`
+- 환경 변수 출처: `backend/.env` (from `.env.stg.example`) + `frontend/.env` (from `.env.stg.example`)
+- DB: stg DB (PostgreSQL URL in `.env.stg` — 또는 현 로컬 단계에서는 SQLite dev DB 공유 가능)
+- Hot reload: X (빌드 산출물 기반)
 
 ### 3.3 prod profile (로컬에서 prod 환경 흉내)
 
 ```bash
-{{빌드 명령 — 예: pnpm build / ./gradlew build}}
+# backend
+cp backend/.env.prod.example backend/.env
+pnpm --filter backend prisma migrate deploy
+pnpm --filter backend build
+pnpm --filter backend start:prod
 
-# 단일 패키지 / (a)~(d) 채택 — 단일 실행
-{{prod 실행 명령 — 예: pnpm start:prod / SPRING_PROFILES_ACTIVE=prod java -jar build/libs/app.jar}}
-
-# (e) 채택 — 워크스페이스 분리 시 2 변형:
-# 옵션 A: 로컬 실행
-#   {{backend — 예: SPRING_PROFILES_ACTIVE=prod java -jar backend/build/libs/app.jar
-#               또는 Node: dotenv -e backend/.env.prod -- node backend/dist/server.js}}
-#   {{frontend 정적 (SPA만) — 예: pnpm --filter @app/frontend exec vite preview --port 4173}}
-# 옵션 B: docker-compose (canonical)
-#   {{예: docker compose -f docker-compose.prod.yml --env-file backend/.env.prod up}}
+# frontend
+cp frontend/.env.prod.example frontend/.env
+pnpm --filter frontend build
+pnpm --filter frontend preview
 ```
 
-- 기대 출력: `{{ready 신호}}`
-- 환경 변수 출처: `.env.prod` *(또는 (e) 채택 시: 워크스페이스별 `.env.prod`)*
-- DB: `{{prod DB 위치 — 보통 별 인스턴스 권장. secret manager(Vault·Doppler·AWS Secrets Manager) 권장, .env.prod는 placeholder만 commit}}`
+- 기대 출력: backend `listening on port 3000` / frontend `Local: http://localhost:4173/`
+- 환경 변수 출처: `backend/.env` (from `.env.prod.example`) + `frontend/.env` (from `.env.prod.example`)
+- DB: prod DB (PostgreSQL URL in `.env.prod` — 추후 배포 시 별 인스턴스. `.env.prod`는 placeholder만 commit)
 - Hot reload: X (빌드 산출물)
-- **단일 환경 운영 시**: N/A 표기
 
 ---
 
@@ -372,13 +337,14 @@ cp .env.prod.example .env.prod
 
 | 자산 | 경로 | 변경 trigger | 갱신 책임 |
 |---|---|---|---|
-| 환경 변수 템플릿 | `.env.{dev,stg,prod}.example` *(또는 (e) 채택 시 워크스페이스별 — 예: `frontend/.env.{p}.example` + `backend/.env.{p}.example` 등 N\*3종, footnote ★1)* | 새 환경 변수 추가 | 변수를 도입한 이슈 |
-| 스키마 적용 (dev iteration) | `{{(a) 분리형: 예 backend/package.json scripts.prisma:push:dev / SQLAlchemy create_all / Alembic upgrade head — 또는 (b) 단일 메커니즘: 'bootRun (spring.flyway.enabled=true 자동 적용)' / 'Database.Migrate() on startup' — 또는 (c) N/A}}` | dev 환경 schema 변경 | 모델 변경 이슈 |
-| DB migrations (stg/prod release) | `{{(a) 분리형: 예 backend/prisma/migrations/ + migrate deploy / flyway CLI migrate / alembic upgrade head — 또는 (b) 단일 메커니즘: 예 backend/src/main/resources/db/migration/V*.sql (적용은 stg/prod bootRun이 자동) — 또는 (c) N/A}}` | 운영 release용 migration 작성·적용 | 운영 release 이슈 |
-| lockfile | `{{pnpm-lock.yaml · poetry.lock · go.sum · gradle.lockfile 등}}` *(풀스택 monorepo는 여러 lockfile 공존 — 워크스페이스별로 1행씩 추가 권장. 예: `frontend/pnpm-lock.yaml` + `backend/gradle.lockfile`, footnote ★2)* | 의존성 추가/변경 | 의존성 도입 이슈 |
-| 설치/seed scripts | `{{예: package.json scripts.{setup,migrate,seed:dev,seed:stg,seed:prod} / build.gradle tasks.seed* / pyproject scripts.*}}` | seed 데이터 변경 | seed 변경 이슈 |
-| 부팅 명령 | 본 LOCAL.md §3 + `{{빌드 도구 manifest의 dev/start scripts}}` | 명령 변경 | 명령 변경 이슈 |
-| 컨테이너 정의 (선택) | `Dockerfile`·`docker-compose.{dev,stg,prod}.yml` *(multi-image 시 `Dockerfile.<svc>` 분리 — 예: `Dockerfile.api` + `Dockerfile.web`)* | infra 변경 | infra 이슈 |
+| 환경 변수 템플릿 (FE) | `frontend/.env.dev.example`, `frontend/.env.stg.example`, `frontend/.env.prod.example` | 환경 변수 추가 | 변수를 도입한 이슈 |
+| 환경 변수 템플릿 (BE) | `backend/.env.dev.example`, `backend/.env.stg.example`, `backend/.env.prod.example` | 환경 변수 추가 | 변수를 도입한 이슈 |
+| 스키마 적용 (dev iteration) | `backend/prisma/schema.prisma` — `pnpm --filter backend prisma db push` | DB 스키마 변경 | 모델 변경 이슈 |
+| DB migrations (stg/prod release) | `backend/prisma/migrations/` — `pnpm --filter backend prisma migrate deploy` | 릴리스용 migration 작성 | 운영 release 이슈 |
+| lockfile | 루트 `pnpm-lock.yaml` | 의존성 추가/변경 | `pnpm install` 실행자 (자동 갱신) |
+| 설치/seed scripts | `pnpm install` (루트), `pnpm --filter backend prisma db push` (dev), seed (추후) | 초기 세팅 변경 | developer |
+| 부팅 명령 | 본 LOCAL.md §3 + `backend/package.json`, `frontend/package.json` scripts | 명령 변경 | 명령 변경 이슈 |
+| 컨테이너 정의 (선택) | 현 단계 미사용 — 추후 Docker 확장 가능 | infra 변경 | infra 이슈 |
 
 > **★1 monorepo 분리 footnote**: §1.5.1 (e) 워크스페이스별 .env 완전 분리 채택 시, "환경 변수 템플릿" 행을 워크스페이스 수만큼 분리해서 1행씩 추가한다 (예: FE 행 + BE 행). 단일 패키지 또는 (a)~(d) 채택은 단일 행 유지. AI 게이트 6번째 축이 *모든* `.env.{p}.example` 파일과 LOCAL.md 본문의 정합을 lint한다.
 > **★2 lockfile footnote**: 워크스페이스별로 stack이 다르면 lockfile도 분리(예: pnpm + Gradle + uv 혼합 시 3개). 모두 commit + AI 게이트가 누락된 lockfile 갱신을 BLOCK한다.
@@ -393,7 +359,9 @@ cp .env.prod.example .env.prod
 ### 5.1 포트 충돌 (`EADDRINUSE`)
 
 ```bash
-{{포트 사용 중 프로세스 확인 명령 — 예: lsof -i :3000}}
+lsof -i :3000    # backend
+lsof -i :5173    # frontend dev
+lsof -i :4173    # frontend preview (stg/prod)
 ```
 
 ### 5.2 환경 변수 누락 (`X is required`)
@@ -408,9 +376,7 @@ cp .env.prod.example .env.prod
 - DB 컨테이너 실행 여부: `docker compose ps`
 - profile별 DB URL 일치 여부: `.env.{dev,stg,prod}` 안의 `DATABASE_URL`
 - 스키마 미적용 (§1.5.2 채택 분류에 따라 진단):
-  - (a) 분리형 채택 시 — dev: `{{예: pnpm prisma:push:dev}}` (또는 최초 1회 정식 흐름 `{{예: pnpm migrate:init}}`). stg/prod: `{{예: pnpm migrate}}` (기존 파일만 적용)
-  - (b) 단일 메커니즘 채택 시 — 부팅 로그에서 자동 적용 확인. 예: Spring Boot + Flyway integration이면 `Flyway Community Edition X.Y.Z by Redgate` + `Migrating schema "public" to version "X"`. 둘 다 없으면 `spring.flyway.enabled` + `spring.jpa.hibernate.ddl-auto` 설정 점검. **`./gradlew flywayMigrate` 같은 별 호출 시도 금지** — 그 태스크는 별 plugin이 필요하고 redundant
-  - (c) N/A — DB 자체가 없는 구조
+  - (a) 분리형 (본 프로젝트 채택) — dev: `pnpm --filter backend prisma db push` / stg/prod: `pnpm --filter backend prisma migrate deploy`
 
 ### 5.4 monorepo cwd에서 `DATABASE_URL not found` (또는 다른 env 누락)
 
@@ -433,11 +399,9 @@ $ cd backend && python -m alembic upgrade head
 
 원인: backend cwd에서 도구를 직접 호출하면 root `.env.{profile}`이 자동 로드되지 않음. backend 자체 env 설정이 없으니 변수 누락.
 
-해결: **워크스페이스 cwd에서 빌드 도구·ORM CLI를 직접 호출하지 말 것**. 항상 root에서 §1.5.1 채택 패턴으로 호출 — 스크립트/run 명령이 root env를 명시 로드함.
-- 채택 패턴 확인: `{{본 newProject 채택 패턴 (a)/(b)/(c)/(d)와 적용 위치를 명시}}`
-  - 예 (Node + dotenv-cli): `backend/package.json scripts.prisma:*` 가 `dotenv -e ../.env.{profile} --` 로 래핑됐는지
-  - 예 (Java + Spring): `SPRING_PROFILES_ACTIVE` env 또는 `--spring.profiles.active=` 플래그가 설정됐는지
-  - 예 (Python + Pydantic settings): `Settings(_env_file="../.env.dev")` 등으로 root env 경로 명시했는지
+해결: 본 프로젝트는 **(e) 워크스페이스별 .env 분리** — 각 workspace가 자기 `.env`를 보유하므로 root cwd 함정이 발생하지 않음. `.env.{profile}.example`을 `.env`로 복사 후 각 workspace에서 실행하면 자동 로드됨.
+- Prisma: `backend/.env`의 `DATABASE_URL` 자동 참조
+- Vite: `frontend/.env`의 `VITE_API_URL` 자동 참조
 
 ### 5.5 컨테이너 베이스 이미지 함정 (Dockerfile 작성 시 — ADR-0042)
 
@@ -526,7 +490,9 @@ cat backend/settings.gradle* | grep -E 'rootProject.name|^include'
 
 > 외부 서비스(Auth0·Stripe·S3 등) 또는 컨테이너 의존이 있으면 본 절에 셋업 절차 명시.
 
-- {{서비스명}}: {{셋업 절차 또는 mock 사용 방법}}
+- **Bootstrap 4 CDN**: `index.html`에서 CDN `<link>` 태그로 로드. 인터넷 연결 필요.
+- **Google Fonts (Titillium Web, Source Serif Pro)**: CDN 로드. 오프라인 시 시스템 폰트 fallback.
+- **Ionicons**: CDN 로드. 하트/설정 아이콘 등.
 
 ---
 
