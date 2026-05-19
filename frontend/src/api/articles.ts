@@ -58,3 +58,7 @@ export async function updateArticleApi(
   });
   return data.article;
 }
+
+export async function deleteArticleApi(slug: string): Promise<void> {
+  await apiClient.delete(`/articles/${slug}`);
+}
