@@ -46,6 +46,15 @@ service-account*.json
 .claude/skills/gstack/bun.lock
 .gstack/
 
+# ========================================
+# IDE
+# ========================================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
 # gstack 심볼릭 링크 (setup이 자동 생성, 커밋 불필요)
 .claude/skills/autoplan
 .claude/skills/benchmark
