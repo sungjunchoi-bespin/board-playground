@@ -1,9 +1,9 @@
 ---
 doc_type: index
-version: v0.1
+version: v0.2
 status: Draft
 author: gen-index.sh
-date: 2026-05-18
+date: 2026-05-19
 gate: C
 related: { R-ID: [], F-ID: [], supersedes: null }
 ---
@@ -14,8 +14,9 @@ related: { R-ID: [], F-ID: [], supersedes: null }
 
 | NN | slug | 한 줄 요약 | R-ID/F-ID |
 |---|---|---|---|
-| 12 | scaffolding | Conduit (RealWorld) -- Scaffolding (TypeScript) |  |
+| 12 | scaffolding/java | Backend (Spring Boot) Scaffolding |  |
+| 12 | scaffolding/typescript | Frontend (React + Vite) Scaffolding |  |
 
 ## 의존성 메모
 
-<!-- TODO: 도메인/하위 영역 간 선후 관계 1줄 -->
+- `java.md`(Backend)와 `typescript.md`(Frontend)는 독립 스택이지만 §6 환경 변수에서 CORS/API URL이 상호 참조된다.

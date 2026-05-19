@@ -1,8 +1,8 @@
 ---
 doc_type: test-design
 gate: C
-version: v1.0
-date: 2026-05-18
+version: v1.1
+date: 2026-05-19
 status: Draft
 author: sungjun.choi@board-playground.dev
 related:
@@ -17,6 +17,7 @@ related:
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v1.1 | 2026-05-19 | Agent (developer) | 백엔드 스택 변경 반영 -- JUnit 5 + MockMvc + Testcontainers (Java/Spring Boot) |
 | v1.0 | 2026-05-18 | Agent (developer) | 초안 -- TypeScript 모노레포(React+Vite FE, Express BE, SQLite+Prisma) 테스트 설계 |
 
 ## 1. 테스트 전략
@@ -29,14 +30,14 @@ related:
 
 | 레벨 | 범위 | 목적 |
 |---|---|---|
-| 단위 (Unit) | 개별 함수, 서비스 메서드, React 컴포넌트, 유틸리티 | 비즈니스 로직 정확성 검증 |
-| 통합 (Integration) | API 엔드포인트 (Express 라우터 + Prisma + SQLite) | 요청-응답 계약 및 DB 연동 검증 |
+| 단위 (Unit) | BE: 도메인 서비스, Application Service, 유틸리티 / FE: React 컴포넌트, 커스텀 훅, 유틸리티 | 비즈니스 로직 정확성 검증 |
+| 통합 (Integration) | BE: REST API 엔드포인트 (Spring MVC + JPA + PostgreSQL) / FE: API 모킹 통합 | 요청-응답 계약 및 DB 연동 검증 |
 | E2E (End-to-End) | 브라우저 기반 사용자 시나리오 (FE + BE + DB 풀스택) | 사용자 관점 골든패스 검증 |
 
 ### 커버리지 목표
 
 - **전체 커버리지 목표: 80%** (라인 기준)
-- 단위 테스트: 80% 이상 (BE 서비스 계층 + FE 컴포넌트/훅)
+- 단위 테스트: 80% 이상 (BE 도메인/서비스 계층 + FE 컴포넌트/훅)
 - 통합 테스트: 모든 API 엔드포인트 정상/에러 경로 커버
 - E2E 테스트: 핵심 사용자 흐름(회원가입, 로그인, 아티클 CRUD, 댓글, 즐겨찾기, 팔로우) 커버
 
@@ -44,13 +45,12 @@ related:
 
 | 레벨 | 도구 | 이유 |
 |---|---|---|
-| 단위 (FE) | Vitest | Vite 네이티브 통합, ESM 지원, Jest 호환 API, HMR 기반 빠른 실행 |
-| 단위 (BE) | Vitest | FE와 동일 러너로 모노레포 통일, TypeScript 네이티브 지원 |
-| 통합 (BE API) | Supertest | Express 앱을 프로세스 내에서 HTTP 요청 테스트, 별도 서버 기동 불필요 |
-| E2E | Playwright | 크로스 브라우저 지원, auto-waiting, 안정적인 셀렉터 전략, 스크린샷/트레이스 내장 |
-| 커버리지 측정 | Vitest (v8/istanbul) | Vitest 내장 커버리지 프로바이더, CI 연동 용이 |
-| 컴포넌트 렌더링 | @testing-library/react | 사용자 관점 DOM 쿼리, 구현 세부사항 비의존 테스트 |
-| 모킹 | msw (Mock Service Worker) | FE 단위 테스트에서 API 모킹, 네트워크 레벨 인터셉트 |
+| 단위 (BE) | JUnit 5 + Mockito + AssertJ | Spring Boot 표준, Service 레이어 목 테스트 |
+| 단위 (FE) | Vitest + Testing Library | React 컴포넌트 단위 테스트 (변경 없음) |
+| 통합 (BE) | @SpringBootTest + MockMvc + Testcontainers | 실 PostgreSQL 컨테이너로 API 통합 테스트 |
+| 통합 (FE) | Vitest + MSW | API 목킹 통합 (변경 없음) |
+| E2E | Playwright | 브라우저 기반 E2E (변경 없음) |
+| API 스펙 검증 | Newman (Postman) | RealWorld 공식 테스트 suite |
 
 ## 3. 시나리오 카탈로그
 
@@ -92,7 +92,7 @@ related:
 | F-09 | ✅ | ✅ | ✅ | 즐겨찾기 (FE) |
 | F-10 | ✅ | ✅ | ✅ | 태그 시스템 (FE) |
 
-> 상세 시나리오는 아래 각 R-/F- 하위 섹션 참조. ❌ 없음 — 모두 ✅ 또는 N/A로 결정 (ADR-0023).
+> 상세 시나리오는 아래 각 R-/F- 하위 섹션 참조. 모두 ✅ 또는 N/A로 결정 (ADR-0023).
 
 ### R-F-01: 회원가입
 
@@ -101,10 +101,10 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 유효 데이터로 가입 성공 + JWT 발급 | ✅ | ✅ | ✅ |
-| 중복 email 가입 시도 422 에러 | ✅ | ✅ | ✅ |
-| 중복 username 가입 시도 422 에러 | ✅ | ✅ | N/A |
-| 필수 필드 누락 422 에러 | ✅ | ✅ | ✅ |
+| 유효 데이터로 가입 성공 + JWT 발급 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | ✅ |
+| 중복 email 가입 시도 422 에러 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | ✅ |
+| 중복 username 가입 시도 422 에러 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | N/A |
+| 필수 필드 누락 422 에러 | ✅ (JUnit 5 -- DTO validation) | ✅ (MockMvc) | ✅ |
 
 ### R-F-02: 로그인
 
@@ -113,9 +113,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 올바른 credentials로 로그인 성공 + JWT 발급 | ✅ | ✅ | ✅ |
-| 잘못된 password 401/422 에러 | ✅ | ✅ | ✅ |
-| 미등록 email 401/422 에러 | ✅ | ✅ | N/A |
+| 올바른 credentials로 로그인 성공 + JWT 발급 | ✅ (JUnit 5 -- AuthService) | ✅ (MockMvc) | ✅ |
+| 잘못된 password 401/422 에러 | ✅ (JUnit 5 -- AuthService) | ✅ (MockMvc) | ✅ |
+| 미등록 email 401/422 에러 | ✅ (JUnit 5 -- AuthService) | ✅ (MockMvc) | N/A |
 
 ### R-F-03: 현재 사용자 조회
 
@@ -124,9 +124,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 유효 JWT로 현재 사용자 조회 성공 | ✅ | ✅ | N/A |
-| JWT 없음 401 에러 | ✅ | ✅ | N/A |
-| 만료/변조 JWT 401 에러 | ✅ | ✅ | N/A |
+| 유효 JWT로 현재 사용자 조회 성공 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | N/A |
+| JWT 없음 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
+| 만료/변조 JWT 401 에러 | ✅ (JUnit 5 -- JwtProvider) | ✅ (MockMvc) | N/A |
 
 ### R-F-04: 사용자 정보 수정
 
@@ -135,10 +135,10 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| bio 수정 성공 | ✅ | ✅ | ✅ |
-| password 수정 후 새 password로 로그인 | ✅ | ✅ | N/A |
-| 중복 email 수정 422 에러 | ✅ | ✅ | N/A |
-| 미인증 수정 시도 401 에러 | ✅ | ✅ | N/A |
+| bio 수정 성공 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | ✅ |
+| password 수정 후 새 password로 로그인 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | N/A |
+| 중복 email 수정 422 에러 | ✅ (JUnit 5 -- UserService) | ✅ (MockMvc) | N/A |
+| 미인증 수정 시도 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-05: 프로필 조회
 
@@ -147,9 +147,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 존재하는 프로필 조회 성공 | ✅ | ✅ | N/A |
-| 로그인 상태 조회 시 following 필드 정확 반영 | ✅ | ✅ | N/A |
-| 미존재 username 404 에러 | ✅ | ✅ | N/A |
+| 존재하는 프로필 조회 성공 | ✅ (JUnit 5 -- ProfileService) | ✅ (MockMvc) | N/A |
+| 로그인 상태 조회 시 following 필드 정확 반영 | ✅ (JUnit 5 -- ProfileService) | ✅ (MockMvc) | N/A |
+| 미존재 username 404 에러 | ✅ (JUnit 5 -- ProfileService) | ✅ (MockMvc) | N/A |
 
 ### R-F-06: 팔로우
 
@@ -158,9 +158,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 팔로우 성공 following=true | ✅ | ✅ | ✅ |
-| 미인증 팔로우 401 에러 | ✅ | ✅ | N/A |
-| 미존재 사용자 팔로우 404 에러 | ✅ | ✅ | N/A |
+| 팔로우 성공 following=true | ✅ (JUnit 5 -- ProfileService) | ✅ (MockMvc) | ✅ |
+| 미인증 팔로우 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
+| 미존재 사용자 팔로우 404 에러 | ✅ (JUnit 5 -- ProfileService) | ✅ (MockMvc) | N/A |
 
 ### R-F-07: 언팔로우
 
@@ -169,8 +169,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 언팔로우 성공 following=false | ✅ | ✅ | N/A |
-| 미인증 언팔로우 401 에러 | ✅ | ✅ | N/A |
+| 언팔로우 성공 following=false | ✅ (JUnit 5 -- ProfileService) | ✅ (MockMvc) | N/A |
+| 미인증 언팔로우 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-08: 아티클 목록 조회
 
@@ -179,11 +179,11 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 전체 조회 최신순 + articlesCount | ✅ | ✅ | ✅ |
-| tag 필터 적용 | ✅ | ✅ | ✅ |
-| limit/offset 페이지네이션 | ✅ | ✅ | N/A |
-| 미존재 tag 빈 배열 반환 | ✅ | ✅ | N/A |
-| body 필드 미반환 확인 (2024/08/16 스펙) | N/A | ✅ | N/A |
+| 전체 조회 최신순 + articlesCount | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | ✅ |
+| tag 필터 적용 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | ✅ |
+| limit/offset 페이지네이션 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 미존재 tag 빈 배열 반환 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| body 필드 미반환 확인 (2024/08/16 스펙) | N/A | ✅ (MockMvc) | N/A |
 
 ### R-F-09: 피드 조회
 
@@ -192,9 +192,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 팔로잉 사용자 글 피드 포함 | ✅ | ✅ | ✅ |
-| 팔로잉 0명 빈 피드 | ✅ | ✅ | N/A |
-| 미인증 피드 조회 401 에러 | ✅ | ✅ | N/A |
+| 팔로잉 사용자 글 피드 포함 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | ✅ |
+| 팔로잉 0명 빈 피드 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 미인증 피드 조회 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-10: 아티클 단건 조회
 
@@ -203,8 +203,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 존재하는 slug로 조회 성공 (body 포함) | ✅ | ✅ | N/A |
-| 미존재 slug 404 에러 | ✅ | ✅ | N/A |
+| 존재하는 slug로 조회 성공 (body 포함) | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 미존재 slug 404 에러 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
 
 ### R-F-11: 아티클 생성
 
@@ -213,10 +213,10 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 전체 필드 입력 생성 성공 + slug 자동 생성 | ✅ | ✅ | ✅ |
-| tagList 생략 시 빈 tagList로 생성 | ✅ | ✅ | N/A |
-| title 누락 422 에러 | ✅ | ✅ | ✅ |
-| 미인증 생성 시도 401 에러 | ✅ | ✅ | N/A |
+| 전체 필드 입력 생성 성공 + slug 자동 생성 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | ✅ |
+| tagList 생략 시 빈 tagList로 생성 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| title 누락 422 에러 | ✅ (JUnit 5 -- DTO validation) | ✅ (MockMvc) | ✅ |
+| 미인증 생성 시도 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-12: 아티클 수정
 
@@ -225,9 +225,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| title 수정 성공 + slug 재생성 | ✅ | ✅ | ✅ |
-| 타인 아티클 수정 403 에러 | ✅ | ✅ | N/A |
-| 미인증 수정 401 에러 | ✅ | ✅ | N/A |
+| title 수정 성공 + slug 재생성 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | ✅ |
+| 타인 아티클 수정 403 에러 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 미인증 수정 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-13: 아티클 삭제
 
@@ -236,9 +236,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 자기 아티클 삭제 성공 + 연관 댓글 삭제 | ✅ | ✅ | N/A |
-| 타인 아티클 삭제 403 에러 | ✅ | ✅ | N/A |
-| 미존재 slug 삭제 404 에러 | ✅ | ✅ | N/A |
+| 자기 아티클 삭제 성공 + 연관 댓글 삭제 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc + Testcontainers) | N/A |
+| 타인 아티클 삭제 403 에러 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 미존재 slug 삭제 404 에러 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
 
 ### R-F-14: 댓글 추가
 
@@ -247,9 +247,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 댓글 작성 성공 | ✅ | ✅ | ✅ |
-| body 빈 문자열 422 에러 | ✅ | ✅ | N/A |
-| 미인증 댓글 401 에러 | ✅ | ✅ | N/A |
+| 댓글 작성 성공 | ✅ (JUnit 5 -- CommentService) | ✅ (MockMvc) | ✅ |
+| body 빈 문자열 422 에러 | ✅ (JUnit 5 -- DTO validation) | ✅ (MockMvc) | N/A |
+| 미인증 댓글 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-15: 댓글 목록 조회
 
@@ -258,9 +258,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 댓글 목록 조회 성공 | ✅ | ✅ | N/A |
-| 댓글 0건 빈 배열 | ✅ | ✅ | N/A |
-| 미존재 slug 404 에러 | ✅ | ✅ | N/A |
+| 댓글 목록 조회 성공 | ✅ (JUnit 5 -- CommentService) | ✅ (MockMvc) | N/A |
+| 댓글 0건 빈 배열 | ✅ (JUnit 5 -- CommentService) | ✅ (MockMvc) | N/A |
+| 미존재 slug 404 에러 | ✅ (JUnit 5 -- CommentService) | ✅ (MockMvc) | N/A |
 
 ### R-F-16: 댓글 삭제
 
@@ -269,9 +269,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 자기 댓글 삭제 성공 | ✅ | ✅ | N/A |
-| 타인 댓글 삭제 403 에러 | ✅ | ✅ | N/A |
-| 미인증 삭제 401 에러 | ✅ | ✅ | N/A |
+| 자기 댓글 삭제 성공 | ✅ (JUnit 5 -- CommentService) | ✅ (MockMvc) | N/A |
+| 타인 댓글 삭제 403 에러 | ✅ (JUnit 5 -- CommentService) | ✅ (MockMvc) | N/A |
+| 미인증 삭제 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-17: 아티클 즐겨찾기
 
@@ -280,8 +280,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 즐겨찾기 성공 favorited=true + count+1 | ✅ | ✅ | ✅ |
-| 미인증 즐겨찾기 401 에러 | ✅ | ✅ | N/A |
+| 즐겨찾기 성공 favorited=true + count+1 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | ✅ |
+| 미인증 즐겨찾기 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-18: 아티클 즐겨찾기 해제
 
@@ -290,8 +290,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 즐겨찾기 해제 성공 favorited=false + count-1 | ✅ | ✅ | N/A |
-| 미인증 해제 401 에러 | ✅ | ✅ | N/A |
+| 즐겨찾기 해제 성공 favorited=false + count-1 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 미인증 해제 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
 
 ### R-F-19: 태그 목록 조회
 
@@ -300,8 +300,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 태그 목록 조회 성공 | ✅ | ✅ | N/A |
-| 아티클 0건 빈 배열 | ✅ | ✅ | N/A |
+| 태그 목록 조회 성공 | ✅ (JUnit 5 -- TagService) | ✅ (MockMvc) | N/A |
+| 아티클 0건 빈 배열 | ✅ (JUnit 5 -- TagService) | ✅ (MockMvc) | N/A |
 
 ### R-N-01: API 응답 형식
 
@@ -310,7 +310,7 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 모든 엔드포인트 Content-Type application/json 확인 | N/A | ✅ | N/A |
+| 모든 엔드포인트 Content-Type application/json 확인 | N/A | ✅ (MockMvc) | N/A |
 
 ### R-N-02: 에러 응답 형식
 
@@ -319,8 +319,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 422 에러 시 errors 객체 형식 검증 | ✅ | ✅ | N/A |
-| 401/403/404 에러 응답 형식 검증 | ✅ | ✅ | N/A |
+| 422 에러 시 errors 객체 형식 검증 | ✅ (JUnit 5 -- ExceptionHandler) | ✅ (MockMvc) | N/A |
+| 401/403/404 에러 응답 형식 검증 | ✅ (JUnit 5 -- ExceptionHandler) | ✅ (MockMvc) | N/A |
 
 ### R-N-03: JWT 인증
 
@@ -329,9 +329,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 유효 JWT 인증 성공 | ✅ | ✅ | N/A |
-| JWT 없음 401 에러 | ✅ | ✅ | N/A |
-| 변조 JWT 401 에러 | ✅ | ✅ | N/A |
+| 유효 JWT 인증 성공 | ✅ (JUnit 5 -- JwtProvider) | ✅ (MockMvc) | N/A |
+| JWT 없음 401 에러 | ✅ (JUnit 5 -- SecurityFilter) | ✅ (MockMvc) | N/A |
+| 변조 JWT 401 에러 | ✅ (JUnit 5 -- JwtProvider) | ✅ (MockMvc) | N/A |
 
 ### R-N-04: CORS
 
@@ -340,8 +340,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 다른 origin 요청 시 CORS 헤더 포함 확인 | N/A | ✅ | N/A |
-| OPTIONS preflight 요청 정상 응답 | N/A | ✅ | N/A |
+| 다른 origin 요청 시 CORS 헤더 포함 확인 | N/A | ✅ (MockMvc) | N/A |
+| OPTIONS preflight 요청 정상 응답 | N/A | ✅ (MockMvc) | N/A |
 
 ### R-N-05: 페이지네이션
 
@@ -350,8 +350,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| limit/offset 파라미터 정상 동작 | ✅ | ✅ | N/A |
-| 기본값 limit=20 offset=0 적용 | ✅ | ✅ | N/A |
+| limit/offset 파라미터 정상 동작 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
+| 기본값 limit=20 offset=0 적용 | ✅ (JUnit 5 -- ArticleService) | ✅ (MockMvc) | N/A |
 
 ### R-N-06: Slug 자동 생성
 
@@ -360,8 +360,8 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 영문 title에서 lowercase-hyphenated slug 생성 | ✅ | ✅ | N/A |
-| 동일 title 중복 시 고유 slug 보장 | ✅ | ✅ | N/A |
+| 영문 title에서 lowercase-hyphenated slug 생성 | ✅ (JUnit 5 -- SlugGenerator) | ✅ (MockMvc) | N/A |
+| 동일 title 중복 시 고유 slug 보장 | ✅ (JUnit 5 -- SlugGenerator) | ✅ (MockMvc + Testcontainers) | N/A |
 
 ### F-01: 회원가입
 
@@ -370,10 +370,10 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 회원가입 폼 렌더링 + 입력 검증 | ✅ | N/A | ✅ |
-| 가입 성공 시 JWT 저장 + 홈 리다이렉트 | ✅ | ✅ | ✅ |
-| 중복 email/username 에러 메시지 표시 | ✅ | ✅ | ✅ |
-| 필수 필드 빈 값 폼 검증 에러 | ✅ | N/A | ✅ |
+| 회원가입 폼 렌더링 + 입력 검증 | ✅ (Vitest) | N/A | ✅ |
+| 가입 성공 시 JWT 저장 + 홈 리다이렉트 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 중복 email/username 에러 메시지 표시 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 필수 필드 빈 값 폼 검증 에러 | ✅ (Vitest) | N/A | ✅ |
 
 ### F-02: 로그인/로그아웃
 
@@ -382,9 +382,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 로그인 성공 시 JWT localStorage 저장 + 헤더 변경 | ✅ | ✅ | ✅ |
-| 로그아웃 시 JWT 삭제 + 비인증 네비게이션 복원 | ✅ | N/A | ✅ |
-| 잘못된 password 에러 메시지 | ✅ | ✅ | ✅ |
+| 로그인 성공 시 JWT localStorage 저장 + 헤더 변경 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 로그아웃 시 JWT 삭제 + 비인증 네비게이션 복원 | ✅ (Vitest) | N/A | ✅ |
+| 잘못된 password 에러 메시지 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
 
 ### F-03: 프로필 조회/수정
 
@@ -393,9 +393,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 설정 페이지 기존 데이터 로드 | ✅ | ✅ | ✅ |
-| bio 수정 후 프로필 반영 | ✅ | ✅ | ✅ |
-| 중복 email 수정 시 422 에러 표시 | ✅ | ✅ | N/A |
+| 설정 페이지 기존 데이터 로드 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| bio 수정 후 프로필 반영 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 중복 email 수정 시 422 에러 표시 | ✅ (Vitest) | ✅ (Vitest + MSW) | N/A |
 
 ### F-04: 팔로우/언팔로우
 
@@ -404,9 +404,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| Follow 버튼 클릭 시 Unfollow로 토글 | ✅ | ✅ | ✅ |
-| 언팔로우 시 버튼 원복 | ✅ | ✅ | ✅ |
-| 미인증 시 팔로우 불가 | ✅ | ✅ | N/A |
+| Follow 버튼 클릭 시 Unfollow로 토글 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 언팔로우 시 버튼 원복 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 미인증 시 팔로우 불가 | ✅ (Vitest) | ✅ (Vitest + MSW) | N/A |
 
 ### F-05: 글로벌 피드
 
@@ -415,10 +415,10 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| Global Feed 탭 최신순 아티클 카드 렌더링 | ✅ | ✅ | ✅ |
-| 태그 클릭 필터링 | ✅ | ✅ | ✅ |
-| 아티클 0건 빈 상태 UI | ✅ | N/A | N/A |
-| 페이지네이션 동작 | ✅ | ✅ | ✅ |
+| Global Feed 탭 최신순 아티클 카드 렌더링 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 태그 클릭 필터링 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 아티클 0건 빈 상태 UI | ✅ (Vitest) | N/A | N/A |
+| 페이지네이션 동작 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
 
 ### F-06: 개인 피드
 
@@ -427,9 +427,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| Your Feed 탭 팔로잉 사용자 아티클만 표시 | ✅ | ✅ | ✅ |
-| 팔로잉 0명 빈 피드 | ✅ | ✅ | N/A |
-| 미인증 시 Your Feed 미표시 | ✅ | N/A | ✅ |
+| Your Feed 탭 팔로잉 사용자 아티클만 표시 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 팔로잉 0명 빈 피드 | ✅ (Vitest) | ✅ (Vitest + MSW) | N/A |
+| 미인증 시 Your Feed 미표시 | ✅ (Vitest) | N/A | ✅ |
 
 ### F-07: 아티클 CRUD
 
@@ -438,11 +438,11 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 에디터 폼 전체 필드 입력 + 발행 성공 | ✅ | ✅ | ✅ |
-| 편집 시 기존 데이터 로드 + 수정 반영 | ✅ | ✅ | ✅ |
-| 삭제 시 홈 리다이렉트 | ✅ | ✅ | ✅ |
-| 필수 필드 누락 422 에러 | ✅ | ✅ | ✅ |
-| 타인 아티클에 편집/삭제 버튼 미표시 | ✅ | N/A | ✅ |
+| 에디터 폼 전체 필드 입력 + 발행 성공 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 편집 시 기존 데이터 로드 + 수정 반영 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 삭제 시 홈 리다이렉트 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 필수 필드 누락 422 에러 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 타인 아티클에 편집/삭제 버튼 미표시 | ✅ (Vitest) | N/A | ✅ |
 
 ### F-08: 댓글
 
@@ -451,10 +451,10 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 댓글 작성 후 목록에 즉시 반영 | ✅ | ✅ | ✅ |
-| 자기 댓글 삭제 후 목록에서 제거 | ✅ | ✅ | ✅ |
-| 미인증 시 댓글 폼 미표시 | ✅ | N/A | ✅ |
-| 타인 댓글에 삭제 버튼 미표시 | ✅ | N/A | ✅ |
+| 댓글 작성 후 목록에 즉시 반영 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 자기 댓글 삭제 후 목록에서 제거 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 미인증 시 댓글 폼 미표시 | ✅ (Vitest) | N/A | ✅ |
+| 타인 댓글에 삭제 버튼 미표시 | ✅ (Vitest) | N/A | ✅ |
 
 ### F-09: 즐겨찾기
 
@@ -463,9 +463,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 하트 버튼 클릭 시 카운트 증가 + 하트 활성 | ✅ | ✅ | ✅ |
-| 재클릭 시 해제 + 카운트 감소 | ✅ | ✅ | ✅ |
-| 미인증 시 즐겨찾기 불가 | ✅ | ✅ | N/A |
+| 하트 버튼 클릭 시 카운트 증가 + 하트 활성 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 재클릭 시 해제 + 카운트 감소 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 미인증 시 즐겨찾기 불가 | ✅ (Vitest) | ✅ (Vitest + MSW) | N/A |
 
 ### F-10: 태그 시스템
 
@@ -474,9 +474,9 @@ related:
 
 | 시나리오 | 단위 | 통합 | E2E |
 |---|---|---|---|
-| 사이드바 태그 목록 렌더링 | ✅ | ✅ | ✅ |
-| 태그 클릭 시 해당 태그 아티클 필터링 | ✅ | ✅ | ✅ |
-| 태그 0건 빈 사이드바 | ✅ | N/A | N/A |
+| 사이드바 태그 목록 렌더링 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 태그 클릭 시 해당 태그 아티클 필터링 | ✅ (Vitest) | ✅ (Vitest + MSW) | ✅ |
+| 태그 0건 빈 사이드바 | ✅ (Vitest) | N/A | N/A |
 
 ### 시나리오 종합 매트릭스
 
@@ -524,17 +524,17 @@ D-06 AI 테스트 게이트 6축과 본 테스트 설계의 정합성:
 
 | D-06 축 | 본 문서 대응 | 검증 방법 |
 |---|---|---|
-| 1축: 단위 테스트 통과 | 1, 2 -- Vitest (FE+BE) | `pnpm --filter @conduit/backend test`, `pnpm --filter @conduit/frontend test` |
-| 2축: 통합 테스트 통과 | 1, 2 -- Supertest | `pnpm --filter @conduit/backend test:integration` |
-| 3축: 빌드 성공 | N/A (빌드 자체) | `pnpm -r build` |
-| 4축: 린트 통과 | N/A (린트 자체) | `pnpm -r lint` |
+| 1축: 단위 테스트 통과 | 1, 2 -- JUnit 5 (BE) + Vitest (FE) | `./gradlew test`, `pnpm --filter @conduit/frontend test` |
+| 2축: 통합 테스트 통과 | 1, 2 -- @SpringBootTest + MockMvc + Testcontainers | `./gradlew integrationTest` |
+| 3축: 빌드 성공 | N/A (빌드 자체) | `./gradlew build`, `pnpm --filter @conduit/frontend build` |
+| 4축: 린트 통과 | N/A (린트 자체) | `./gradlew checkstyleMain`, `pnpm --filter @conduit/frontend lint` |
 | 5축: 브라우저 골든패스 실증 | 3 -- Playwright E2E | `pnpm --filter @conduit/e2e test` + gstack `/qa` 스크린샷 |
 | 6축: 3-profile 부팅 검증 | N/A (부팅 자체) | dev/stg/prod profile별 서버 기동 확인 |
 
 ### Test Plan 4블록 (AI 게이트 + 휴먼 게이트 공유)
 
-1. **단위 테스트 블록**: Vitest로 FE 컴포넌트/훅/유틸 + BE 서비스/유틸 검증. 커버리지 80% 이상 게이트.
-2. **통합 테스트 블록**: Supertest로 18개 API 엔드포인트 정상/에러 경로 전수 검증. R-N-01(응답 형식), R-N-04(CORS) 전역 검증 포함.
+1. **단위 테스트 블록**: JUnit 5 + Mockito + AssertJ로 BE 도메인/서비스/유틸 검증, Vitest로 FE 컴포넌트/훅/유틸 검증. 커버리지 80% 이상 게이트.
+2. **통합 테스트 블록**: @SpringBootTest + MockMvc + Testcontainers(PostgreSQL)로 18개 API 엔드포인트 정상/에러 경로 전수 검증. R-N-01(응답 형식), R-N-04(CORS) 전역 검증 포함.
 3. **E2E 테스트 블록**: Playwright로 골든패스 시나리오 -- 회원가입 -> 로그인 -> 아티클 작성 -> 댓글 -> 즐겨찾기 -> 팔로우 -> 피드 확인. 스크린샷 `docs/features/<slug>/screenshots/`에 저장.
 4. **수동 검증 블록 (휴먼 게이트)**: 브라우저에서 9개 라우트 탐색, 인증 상태별 네비게이션 변경 확인, 반응형 레이아웃 확인. `tested` 라벨 부착 후 머지 허용.
 
@@ -560,19 +560,19 @@ D-06 AI 테스트 게이트 6축과 본 테스트 설계의 정합성:
 
 ### 테스트 데이터 격리
 
-- 단위 테스트: 인메모리 모킹 (Prisma mock)
-- 통합 테스트: 테스트별 SQLite 인메모리 DB (`datasource db { url = "file::memory:" }`) 또는 임시 파일 DB
+- 단위 테스트: 인메모리 모킹 (Mockito mock -- Repository/Service 계층 격리)
+- 통합 테스트: Testcontainers PostgreSQL 컨테이너 (테스트별 트랜잭션 롤백 또는 @Sql 시드)
 - E2E 테스트: 전용 테스트 DB + 시나리오별 시드 데이터, 테스트 후 초기화
 
 ## 6. 성능·보안 테스트
 
 | 종류 | 도구 | 시점 | R-ID |
 |---|---|---|---|
-| API 응답 시간 | Vitest (타이머) + Supertest | 통합 테스트 시 | R-N-01 |
-| 페이지네이션 성능 | Supertest (대량 데이터 시드) | 통합 테스트 시 | R-N-05 |
-| JWT 변조 방어 | Vitest + Supertest | 단위/통합 테스트 시 | R-N-03 |
-| XSS 방어 (마크다운 렌더링) | Playwright (악성 입력 시나리오) | E2E 테스트 시 | R-N-02 |
-| 비밀번호 해싱 | Vitest (bcrypt/argon2 검증) | 단위 테스트 시 | R-F-01, R-F-02 |
-| CORS 헤더 검증 | Supertest (origin 조작) | 통합 테스트 시 | R-N-04 |
-| SQL 인젝션 방어 | Supertest (악성 쿼리 파라미터) | 통합 테스트 시 | R-N-02 |
-| 슬러그 충돌 내구성 | Vitest (대량 동일 title) | 단위 테스트 시 | R-N-06 |
+| API 응답 시간 | JUnit 5 (타이머) + MockMvc | 통합 테스트 시 | R-N-01 |
+| 페이지네이션 성능 | Testcontainers (대량 시드) | 통합 테스트 시 | R-N-05 |
+| JWT 변조 방어 | JUnit 5 + MockMvc | 단위/통합 테스트 시 | R-N-03 |
+| XSS 방어 | Playwright | E2E 테스트 시 | R-N-02 |
+| 비밀번호 해싱 | JUnit 5 (BCryptPasswordEncoder) | 단위 테스트 시 | R-F-01, R-F-02 |
+| CORS 헤더 검증 | MockMvc (origin 조작) | 통합 테스트 시 | R-N-04 |
+| SQL 인젝션 방어 | MockMvc (파라미터 조작) | 통합 테스트 시 | R-N-02 |
+| 슬러그 충돌 내구성 | JUnit 5 | 단위 테스트 시 | R-N-06 |

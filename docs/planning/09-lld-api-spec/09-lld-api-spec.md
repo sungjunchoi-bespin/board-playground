@@ -1,8 +1,8 @@
 ---
 doc_type: api-spec
 gate: C
-version: v1.0
-date: 2026-05-18
+version: v1.1
+date: 2026-05-19
 status: Draft
 author: sungjun.choi@board-playground.dev
 related:
@@ -17,6 +17,7 @@ related:
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v1.1 | 2026-05-19 | Agent (developer) | 백엔드 스택 변경 반영 — Express/Prisma -> Spring Boot 3.x/JPA, 포트 3000 -> 8080, 에러 처리 @RestControllerAdvice, Swagger UI 추가 |
 | v1.0 | 2026-05-18 | Agent (architect) | 초안 — RealWorld 공식 스펙 기반 19개 엔드포인트 정의 |
 
 ## 1. 개요
@@ -27,7 +28,17 @@ related:
 /api
 ```
 
-모든 엔드포인트는 `/api` prefix를 사용한다. 로컬 개발 환경 기준 `http://localhost:3000/api`.
+모든 엔드포인트는 `/api` prefix를 사용한다. 로컬 개발 환경 기준 `http://localhost:8080/api`.
+
+### Swagger UI
+
+Springdoc OpenAPI가 자동 생성하는 API 문서를 다음 경로에서 확인할 수 있다.
+
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- OpenAPI YAML: `http://localhost:8080/v3/api-docs.yaml`
+
+> 운영 환경(prod profile)에서는 Swagger UI를 비활성화한다 (`springdoc.swagger-ui.enabled=false`).
 
 ### Content-Type
 
@@ -35,19 +46,20 @@ related:
 
 ### 인증 (Authentication)
 
-JWT 기반 인증. 인증이 필요한 엔드포인트는 다음 헤더를 포함해야 한다.
+JWT 기반 인증. Spring Security filter chain에서 JWT 검증을 수행한다. 인증이 필요한 엔드포인트는 다음 헤더를 포함해야 한다.
 
 ```
 Authorization: Token jwt.token.here
 ```
 
 - `Token` prefix는 RealWorld 스펙 고유 형식 (Bearer가 아님)
-- 인증 필수(Required): 헤더 누락 시 `401 Unauthorized`
-- 인증 선택(Optional): 헤더 있으면 사용자 컨텍스트 반영, 없으면 비인증 모드로 처리
+- Spring Security의 `OncePerRequestFilter`를 상속한 `JwtAuthenticationFilter`가 요청마다 토큰을 파싱하여 `SecurityContextHolder`에 인증 정보를 설정한다
+- 인증 필수(Required): 헤더 누락 시 `401 Unauthorized` (Spring Security `AuthenticationEntryPoint`가 반환)
+- 인증 선택(Optional): 헤더 있으면 사용자 컨텍스트 반영, 없으면 비인증 모드로 처리 (`SecurityContextHolder`에 `AnonymousAuthenticationToken` 유지)
 
 ### 에러 응답 형식
 
-모든 에러 응답은 다음 형식을 따른다.
+모든 에러 응답은 다음 형식을 따른다. `@RestControllerAdvice`가 글로벌 예외를 포착하여 RealWorld 스펙 형식으로 일괄 변환한다.
 
 ```json
 {
@@ -57,6 +69,8 @@ Authorization: Token jwt.token.here
   }
 }
 ```
+
+> Spring Boot 구현에서 `@Valid` 바인딩 에러(`MethodArgumentNotValidException`)와 도메인 예외(`sealed interface`로 정의)를 `@RestControllerAdvice`의 `@ExceptionHandler`에서 위 형식으로 매핑한다.
 
 ### 공통 응답 객체
 
@@ -184,7 +198,7 @@ Authorization: Token jwt.token.here
 |---|---|---|---|
 | user.username | string | Y | 고유 사용자명 |
 | user.email | string | Y | 고유 이메일 |
-| user.password | string | Y | 비밀번호 (평문, 서버에서 해싱) |
+| user.password | string | Y | 비밀번호 (평문, 서버에서 `BCryptPasswordEncoder`로 해싱) |
 
 **Response 200**
 
@@ -574,7 +588,7 @@ Authorization: Token jwt.token.here
 }
 ```
 
-> **참고** (2024/08/16 이후): List Articles에서 `body` 필드를 미반환할 수 있다. 본 프로젝트에서는 SRS v1.1 결정에 따라 body 미반환을 기본으로 한다. 단건 조회(GET /api/articles/:slug)에서만 body를 반환한다.
+> **참고** (2024/08/16 이후): List Articles에서 `body` 필드를 미반환할 수 있다. 본 프로젝트에서는 SRS v1.1 결정에 따라 body 미반환을 기본으로 한다. 단건 조회(GET /api/articles/:slug)에서만 body를 반환한다. Spring Data JPA에서는 DTO Projection 또는 JPQL `SELECT` 절로 body 컬럼을 제외한다.
 
 **Response 4xx/5xx**
 
@@ -892,7 +906,7 @@ Authorization: Token jwt.token.here
 HTTP 200 OK (빈 body 또는 204 No Content)
 ```
 
-> 아티클 삭제 시 연관 댓글, 즐겨찾기, 태그 매핑도 함께 삭제 (cascade).
+> 아티클 삭제 시 연관 댓글, 즐겨찾기, 태그 매핑도 함께 삭제 (JPA `CascadeType.REMOVE` + `orphanRemoval=true`).
 
 **Response 4xx/5xx**
 
@@ -1238,4 +1252,4 @@ N/A -- 본 프로젝트는 외부 시스템 연동이 없으며 Webhook/콜백 �
 
 - Rate Limit: N/A (로컬 전용)
 - Quota: N/A
-- 추후 배포 환경 전환 시 별도 설계 필요 (미들웨어 기반 Rate Limit 권장)
+- 추후 배포 환경 전환 시 별도 설계 필요 (Spring Cloud Gateway 또는 Bucket4j 기반 Rate Limit 권장)

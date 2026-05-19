@@ -12,6 +12,7 @@
 
 | Version | Date | Author | Change |
 |---|---|---|---|
+| v0.3 | 2026-05-19 | Agent (architect) | BE 스택 전환 — Java 24 + Spring Boot 3.x + Hexagonal + PostgreSQL + Flyway. 12-scaffolding/java.md + typescript.md §5~§7 기반 전면 재작성 |
 | v0.2 | 2026-05-18 | Agent (architect) | 첫 채움 — 12-scaffolding/typescript.md §5~§7 기반 profile별 부팅 명령·자산 작성 |
 | v0.1 | 2026-05-18 | Sungjun Choi | 초안 — install.sh가 LOCAL.template.md를 카피해 생성. 첫 채움은 12-scaffolding §7 작성 직후. |
 | v0.2-template | 2026-05-16 | yongtae.cho@bespinglobal.com | template 자체 보강 (test-case-3 PR #37·#38 회귀 흡수, ADR-0040 v1.1, **stack-agnostic**): §1.5 *사전* 함정 안내 박스 신설(monorepo+root .env / ORM 최초 migration / SPA 정적 서버 3종), §2 단계 4 push vs migrate init 분기, §3.2·3.3 실제 동작 stg/prod 명령 패턴, §5.3·5.4 cwd 함정 troubleshooting. **언어 일반화** — §1.5.1 해결 패턴 (a)~(d): Java/Spring `spring.profiles.active`·Python `python-dotenv`/Pydantic·Go `godotenv`·Node `dotenv-cli` 4개 동치 + symlink fallback. §1.5.2 ORM에 Prisma·TypeORM·SQLAlchemy·JPA(Hibernate)·Flyway·Liquibase 사례 포함. §3.2·3.3·5.4 예시도 Node와 Java 양 stack 명시. |
@@ -25,12 +26,14 @@
 
 ## 1. 사전 요구사항
 
-> 본 절은 12-scaffolding §1 디렉토리 트리 + §2 패키지 명명 규칙에서 도출.
+> 본 절은 12-scaffolding/java.md §1 + typescript.md §1 디렉토리 트리에서 도출.
 
-- **언어/런타임**: Node.js 20 LTS
-- **패키지 매니저**: pnpm 9
-- **컨테이너 (선택)**: 현 단계 미사용 (추후 Docker 확장 가능)
-- **DB**: SQLite (dev), PostgreSQL (stg/prod — 추후)
+- **Backend 언어/런타임**: Java 24.x (JDK 24)
+- **Backend 빌드 도구**: Gradle (Kotlin DSL) — wrapper 포함 (`backend/gradlew`)
+- **Frontend 언어/런타임**: Node.js 20 LTS
+- **Frontend 패키지 매니저**: pnpm 9
+- **DB**: PostgreSQL 16+ (dev/stg/prod 모두)
+- **컨테이너 (선택)**: 현 단계 미사용 (추후 Docker 확장 가능). PostgreSQL은 로컬 설치 또는 Docker 컨테이너
 - **OS 가정**: macOS / Linux / WSL2
 
 ---
@@ -65,7 +68,7 @@
   - 단점: `.example` 파일 수가 N\*3로 늘어남 — §5.2 troubleshooting과 §4 자산 표가 N\*3 분량 lint 필요
   - 적용 예: 본 template 권고 — 풀스택 (FE Vite/Next + BE Spring/Rails/Django) monorepo
 
-본 프로젝트 채택: **(e) 워크스페이스별 .env 완전 분리** — `frontend/.env.{dev,stg,prod}.example` + `backend/.env.{dev,stg,prod}.example` (2 workspace × 3 profile = 6벌)
+본 프로젝트 채택: **BE는 (a) Spring native profiles** (`application-{dev,stg,prod}.yml`) + **FE는 (e) 워크스페이스별 .env 분리** (`frontend/.env.{dev,stg,prod}.example`). BE는 `.env` 파일 없이 Spring profiles로 설정 분리, FE는 Vite `.env` 파일 사용.
 
 ### 1.5.2 ORM 최초 migration 부재 (3분류 모델)
 
@@ -87,9 +90,10 @@
     - **GORM (Go)** — 앱 시작 코드에 `db.AutoMigrate(&Model{})` 호출
 - **(c) N/A** — ORM/스키마 자체 없음 (CLI-only, frontend-only, file-system store 등)
 
-본 프로젝트 채택 분류: **(a) 분리형** — Prisma
-- dev: `pnpm --filter backend prisma db push` (schema.prisma → DB 직접 동기)
-- stg/prod: `pnpm --filter backend prisma migrate deploy` (prisma/migrations/ 정식 파일 적용)
+본 프로젝트 채택 분류: **(b) 단일 메커니즘 (부팅 통합)** — Spring Boot + Flyway integration
+- dev/stg/prod 공통: `./gradlew bootRun --args='--spring.profiles.active={profile}'` 실행 시 Flyway가 `db/migration/V*.sql` 자동 적용
+- 별도 `flyway migrate` CLI 또는 Gradle 태스크 호출 불필요
+- migration 파일 추가 후 서버 재시작하면 자동 적용
 
 ### 1.5.3 stg/prod 부팅용 정적 서버 가정 (SPA frontend 한정)
 
@@ -231,7 +235,7 @@ cat <gradlew 위치>/settings.gradle* 2>/dev/null | grep -E 'rootProject.name|^i
 
 원칙: **wrapper/CLI가 module 안에 있고 parent 설정이 module을 포함하지 않으면, module 자체가 root이고 multi-project syntax는 미존재 경로**.
 
-본 프로젝트 채택: **단일 stack (N/A)** — pnpm workspace로 FE/BE 모두 Node.js. `pnpm install` 한 번으로 전체 의존성 설치.
+본 프로젝트 채택: **multi-stack (standalone module build)** — `frontend/` (pnpm, Node.js) + `backend/` (Gradle, Java). wrapper 위치: `backend/gradlew`. `backend/settings.gradle.kts`의 `rootProject.name = "backend"` + `include` 없음 → standalone module build. multi-project syntax (`:backend:task`) 사용 금지.
 
 ---
 
@@ -242,25 +246,32 @@ cat <gradlew 위치>/settings.gradle* 2>/dev/null | grep -E 'rootProject.name|^i
 git clone <repo-url>
 cd board-playground
 
-# 2) 의존성 설치 (pnpm workspace — root에서 한 번)
-pnpm install
+# 2) 의존성 설치 — multi-stack: stack별로 각각 실행
+# FE (pnpm — frontend/ 디렉토리에서)
+(cd frontend && pnpm install)
 
-# 3) 환경 변수 파일 준비 — (e) 워크스페이스별 .env 분리 (2 workspace × 3 profile = 6벌)
+# BE (Gradle — backend/ 디렉토리에서, standalone module build)
+(cd backend && ./gradlew build)
+# ⚠️ ./gradlew :backend:build 아님 — standalone build이므로 `:backend:` 접두사 금지 (§1.5.5 참조)
+
+# 3) 환경 변수 파일 준비
+# FE: Vite .env 파일 (3벌)
 cp frontend/.env.dev.example  frontend/.env
-cp backend/.env.dev.example   backend/.env
-# stg/prod 프로파일은 별도 .env 파일로 전환 후 실행 (§3.2, §3.3 참조)
-#
-# 각 .env 안의 시크릿(JWT_SECRET 등)을 실제 값으로 채움
-# JWT_SECRET은 HS256 최소 32자 이상 권장
+# stg/prod 프로파일은 §3.2, §3.3에서 .env 전환 후 실행
 
-# 4) DB 스키마 적용 (dev profile, 최초 1회) — (a) 분리형 Prisma
-pnpm --filter backend prisma db push
-# ⚠️ 정식 migration 흐름은 stg/prod 배포 시:
-#   pnpm --filter backend prisma migrate dev --name init  (최초 1회)
-#   pnpm --filter backend prisma migrate deploy           (이후)
+# BE: Spring profiles (application-{profile}.yml)이 이미 리소스에 포함
+# 시크릿(JWT secret, DB password)은 application-dev.yml에 dev 더미값 기재
+# stg/prod 시크릿은 secret manager 또는 환경 변수 주입 (§6 참조)
 
-# 5) seed 데이터 (선택 — 추후 구현 시)
-# pnpm --filter backend prisma db seed
+# 4) PostgreSQL 준비 (§6 외부 의존 참조)
+# Docker: docker run -d --name conduit-pg -e POSTGRES_USER=conduit -e POSTGRES_PASSWORD=conduit -e POSTGRES_DB=conduit_dev -p 5432:5432 postgres:16
+# 또는 로컬 PostgreSQL: createdb conduit_dev
+
+# 5) DB 스키마 적용 — (b) 단일 메커니즘: bootRun이 곧 migrate
+# backend 최초 부팅 시 Flyway가 db/migration/V*.sql을 자동 적용
+# 별도 migrate 명령 불필요 — §3.1의 bootRun이 자동 수행
+
+# 6) seed 데이터 (선택 — 추후 Flyway data migration 또는 별도 data.sql로 구현)
 ```
 
 ---
@@ -272,83 +283,89 @@ pnpm --filter backend prisma db push
 ### 3.1 dev profile (로컬 개발)
 
 ```bash
-# (e) 워크스페이스 분리 — 터미널 2개로 각각 실행 (hot reload O)
+# 터미널 2개로 각각 실행 (hot reload O)
 
-# 터미널 1: backend (port 3000)
-cp backend/.env.dev.example backend/.env
-pnpm --filter backend prisma db push
-pnpm --filter backend dev
+# 터미널 1: backend (port 8080, Spring Boot + Flyway auto-migrate)
+cd backend
+./gradlew bootRun --args='--spring.profiles.active=dev'
 
-# 터미널 2: frontend (port 5173)
-cp frontend/.env.dev.example frontend/.env
-pnpm --filter frontend dev
+# 터미널 2: frontend (port 5173, Vite HMR)
+cd frontend
+cp .env.dev.example .env
+pnpm install
+pnpm dev
 ```
 
-- 기대 출력: backend `listening on port 3000` / frontend `Local: http://localhost:5173/`
-- 환경 변수 출처: `backend/.env` (from `.env.dev.example`) + `frontend/.env` (from `.env.dev.example`)
-- DB: `backend/dev.db` (SQLite 파일)
-- Hot reload: O (tsx watch + vite HMR)
+- 기대 출력: backend `Started ConduitApplication` (port 8080) / frontend `Local: http://localhost:5173/`
+- 환경 변수 출처: BE `application-dev.yml` (Spring profiles) + FE `frontend/.env` (from `.env.dev.example`)
+- DB: PostgreSQL `localhost:5432/conduit_dev` (Flyway가 bootRun 시 `db/migration/V*.sql` 자동 적용)
+- Hot reload: BE — Spring DevTools 또는 Gradle continuous build / FE — Vite HMR
 
 ### 3.2 stg profile (스테이징 — 로컬에서 stg 환경 흉내)
 
 ```bash
-# backend
-cp backend/.env.stg.example backend/.env
-pnpm --filter backend prisma migrate deploy
-pnpm --filter backend build
-pnpm --filter backend start:stg
+# backend (port 8080, Flyway auto-migrate on startup)
+cd backend
+./gradlew bootRun --args='--spring.profiles.active=stg'
 
 # frontend
-cp frontend/.env.stg.example frontend/.env
-pnpm --filter frontend build
-pnpm --filter frontend preview
+cd frontend
+cp .env.stg.example .env
+pnpm install
+pnpm build
+pnpm preview
 ```
 
-- 기대 출력: backend `listening on port 3000` / frontend `Local: http://localhost:4173/`
-- 환경 변수 출처: `backend/.env` (from `.env.stg.example`) + `frontend/.env` (from `.env.stg.example`)
-- DB: stg DB (PostgreSQL URL in `.env.stg` — 또는 현 로컬 단계에서는 SQLite dev DB 공유 가능)
+- 기대 출력: backend `Started ConduitApplication` (port 8080) / frontend `Local: http://localhost:4173/`
+- 환경 변수 출처: BE `application-stg.yml` + FE `frontend/.env` (from `.env.stg.example`)
+- DB: PostgreSQL `host:5432/conduit_stg` (Flyway auto-migrate)
 - Hot reload: X (빌드 산출물 기반)
 
 ### 3.3 prod profile (로컬에서 prod 환경 흉내)
 
 ```bash
-# backend
-cp backend/.env.prod.example backend/.env
-pnpm --filter backend prisma migrate deploy
-pnpm --filter backend build
-pnpm --filter backend start:prod
+# backend (JAR 빌드 후 실행)
+cd backend
+./gradlew bootJar
+java -jar build/libs/backend-*.jar --spring.profiles.active=prod
 
 # frontend
-cp frontend/.env.prod.example frontend/.env
-pnpm --filter frontend build
-pnpm --filter frontend preview
+cd frontend
+cp .env.prod.example .env
+pnpm install
+pnpm build
+pnpm preview
 ```
 
-- 기대 출력: backend `listening on port 3000` / frontend `Local: http://localhost:4173/`
-- 환경 변수 출처: `backend/.env` (from `.env.prod.example`) + `frontend/.env` (from `.env.prod.example`)
-- DB: prod DB (PostgreSQL URL in `.env.prod` — 추후 배포 시 별 인스턴스. `.env.prod`는 placeholder만 commit)
+- 기대 출력: backend `Started ConduitApplication` (port 8080) / frontend `Local: http://localhost:4173/`
+- 환경 변수 출처: BE `application-prod.yml` (시크릿은 secret manager 환경 변수 주입) + FE `frontend/.env` (from `.env.prod.example`)
+- DB: PostgreSQL `host:5432/conduit_prod` (Flyway auto-migrate)
 - Hot reload: X (빌드 산출물)
 
 ---
 
 ## 4. 부팅 자산 (Runnability Assets)
 
-> 본 표는 `docs/planning/12-scaffolding/<lang>.md` §7과 동기 (다국어 시 lang별 파일 모두). 자산이 변경되면 양쪽 모두 갱신.
+> 본 표는 `docs/planning/12-scaffolding/java.md` §7 (BE) + `typescript.md` §7 (FE)과 동기. 자산이 변경되면 양쪽 모두 갱신.
 
 | 자산 | 경로 | 변경 trigger | 갱신 책임 |
 |---|---|---|---|
+| Spring profiles (BE dev) | `backend/src/main/resources/application-dev.yml` | 설정/환경 변수 변경 | 해당 이슈 담당 developer |
+| Spring profiles (BE stg) | `backend/src/main/resources/application-stg.yml` | 설정/환경 변수 변경 | 해당 이슈 담당 developer |
+| Spring profiles (BE prod) | `backend/src/main/resources/application-prod.yml` | 설정/환경 변수 변경 | 해당 이슈 담당 developer |
 | 환경 변수 템플릿 (FE) | `frontend/.env.dev.example`, `frontend/.env.stg.example`, `frontend/.env.prod.example` | 환경 변수 추가 | 변수를 도입한 이슈 |
-| 환경 변수 템플릿 (BE) | `backend/.env.dev.example`, `backend/.env.stg.example`, `backend/.env.prod.example` | 환경 변수 추가 | 변수를 도입한 이슈 |
-| 스키마 적용 (dev iteration) | `backend/prisma/schema.prisma` — `pnpm --filter backend prisma db push` | DB 스키마 변경 | 모델 변경 이슈 |
-| DB migrations (stg/prod release) | `backend/prisma/migrations/` — `pnpm --filter backend prisma migrate deploy` | 릴리스용 migration 작성 | 운영 release 이슈 |
-| lockfile | 루트 `pnpm-lock.yaml` | 의존성 추가/변경 | `pnpm install` 실행자 (자동 갱신) |
-| 설치/seed scripts | `pnpm install` (루트), `pnpm --filter backend prisma db push` (dev), seed (추후) | 초기 세팅 변경 | developer |
-| 부팅 명령 | 본 LOCAL.md §3 + `backend/package.json`, `frontend/package.json` scripts | 명령 변경 | 명령 변경 이슈 |
+| 스키마 적용 (dev iteration) | N/A — (b) 단일 메커니즘: §3 부팅(bootRun)이 곧 migrate. `backend/src/main/resources/db/migration/V*.sql` | DB 스키마 변경 | developer (migration 파일 추가) |
+| DB migrations (stg/prod release) | `backend/src/main/resources/db/migration/V*.sql` — bootRun/JAR 실행 시 Flyway 자동 적용 | DB 스키마 변경 | developer (migration SQL 작성) |
+| lockfile (FE) | `frontend/pnpm-lock.yaml` | FE 의존성 추가/변경 | `pnpm install` 실행자 (자동 갱신) |
+| Gradle wrapper (BE) | `backend/gradlew`, `backend/gradle/wrapper/` | Gradle 버전 변경 | developer |
+| Gradle build script (BE) | `backend/build.gradle.kts`, `backend/settings.gradle.kts` | BE 의존성 추가/변경 | developer |
+| 설치/seed scripts | FE: `cd frontend && pnpm install` / BE: `cd backend && ./gradlew build` / seed: Flyway data migration 또는 `data.sql` | 초기 세팅 변경 | developer |
+| 부팅 명령 | 본 LOCAL.md §3 + `frontend/package.json` scripts + `backend/build.gradle.kts` tasks | 명령 변경 | 명령 변경 이슈 |
 | 컨테이너 정의 (선택) | 현 단계 미사용 — 추후 Docker 확장 가능 | infra 변경 | infra 이슈 |
 
-> **★1 monorepo 분리 footnote**: §1.5.1 (e) 워크스페이스별 .env 완전 분리 채택 시, "환경 변수 템플릿" 행을 워크스페이스 수만큼 분리해서 1행씩 추가한다 (예: FE 행 + BE 행). 단일 패키지 또는 (a)~(d) 채택은 단일 행 유지. AI 게이트 6번째 축이 *모든* `.env.{p}.example` 파일과 LOCAL.md 본문의 정합을 lint한다.
-> **★2 lockfile footnote**: 워크스페이스별로 stack이 다르면 lockfile도 분리(예: pnpm + Gradle + uv 혼합 시 3개). 모두 commit + AI 게이트가 누락된 lockfile 갱신을 BLOCK한다.
-> **단일 메커니즘(b) 채택 시 footnote**: "스키마 적용" + "DB migrations" 두 행에 별 명령을 넣지 않음. 양쪽 모두 §3 부팅 명령 참조 + migration 파일 디렉토리 명시. 예: 본 LOCAL.md §3 `./gradlew bootRun --args='--spring.profiles.active=*'` + `src/main/resources/db/migration/V*.sql`. **Spring Boot 프로젝트에서 `./gradlew flywayMigrate` 같은 별 Gradle 태스크 작성 금지** — 그 태스크는 별도 `org.flywaydb.flyway` 플러그인 도입 시에만 존재하고, integration은 부팅 자체가 migrate를 수행 (ADR-0037 §2.7).
+> **★1 multi-stack footnote**: BE는 Spring profiles (`application-{profile}.yml`) 사용, FE는 Vite `.env` 파일 사용. stack이 다르므로 환경 설정 메커니즘도 분리.
+> **★2 lockfile footnote**: FE는 `pnpm-lock.yaml`, BE는 Gradle dependency resolution (lockfile 없음, `build.gradle.kts`가 정본). 모두 commit 대상.
+> **단일 메커니즘(b) 채택 footnote**: "스키마 적용" + "DB migrations" 두 행 모두 §3 부팅 명령 참조. `./gradlew bootRun --args='--spring.profiles.active=*'` 실행 시 `src/main/resources/db/migration/V*.sql` 자동 적용. **`./gradlew flywayMigrate` 같은 별 Gradle 태스크 호출 금지** — 그 태스크는 별도 `org.flywaydb.flyway` 플러그인 도입 시에만 존재하고, integration은 부팅 자체가 migrate를 수행 (ADR-0037 §2.7).
 
 ---
 
@@ -356,52 +373,43 @@ pnpm --filter frontend preview
 
 > newProject 도입 후 부팅 시 발견되는 문제를 *이슈 단위*로 본 절에 누적. AI 게이트 6번째 축이 부팅 실패를 BLOCK하지만, *해결 방법*은 본 절이 정본.
 
-### 5.1 포트 충돌 (`EADDRINUSE`)
+### 5.1 포트 충돌 (`EADDRINUSE` / `Address already in use`)
 
 ```bash
-lsof -i :3000    # backend
-lsof -i :5173    # frontend dev
+lsof -i :8080    # backend (Spring Boot)
+lsof -i :5173    # frontend dev (Vite)
 lsof -i :4173    # frontend preview (stg/prod)
+lsof -i :5432    # PostgreSQL
 ```
 
-### 5.2 환경 변수 누락 (`X is required`)
+### 5.2 환경 변수 / 설정 누락
 
-해당 변수가 `.env.{dev,stg,prod}.example` **모든 .example 파일**에 정의됐는지 확인. profile 동기 누락이 가장 흔한 패턴.
-- 단일 패키지 / (a)~(d) 채택: 3벌 (`.env.{dev,stg,prod}.example`)
-- (e) 채택 — 워크스페이스 분리: **워크스페이스 수 × 3벌** (예: FE+BE 2개 워크스페이스면 6벌, FE+BE+worker 3개면 9벌)
-- 짧은 시크릿 함정: `JWT_SECRET` 등은 알고리즘 최소 길이(HS256 = 32자) 미만 시 `WeakKeyException` 류 에러
+- **FE**: `frontend/.env.{dev,stg,prod}.example` 3벌 모두에 `VITE_API_URL` 정의 확인
+- **BE**: `backend/src/main/resources/application-{dev,stg,prod}.yml` 3벌 모두에 `spring.datasource.*`, `conduit.jwt.*` 등 정의 확인
+- 짧은 시크릿 함정: `conduit.jwt.secret`은 HS256 최소 32자 이상. 미달 시 `WeakKeyException` 류 에러
 
 ### 5.3 DB 연결 실패
 
-- DB 컨테이너 실행 여부: `docker compose ps`
-- profile별 DB URL 일치 여부: `.env.{dev,stg,prod}` 안의 `DATABASE_URL`
-- 스키마 미적용 (§1.5.2 채택 분류에 따라 진단):
-  - (a) 분리형 (본 프로젝트 채택) — dev: `pnpm --filter backend prisma db push` / stg/prod: `pnpm --filter backend prisma migrate deploy`
+- PostgreSQL 실행 여부: `docker ps` (Docker) 또는 `pg_isready -h localhost -p 5432` (로컬)
+- profile별 DB URL 일치 여부: `application-{profile}.yml` 안의 `spring.datasource.url`
+- DB 생성 여부: `psql -h localhost -U conduit -l` 로 `conduit_dev` / `conduit_stg` / `conduit_prod` 존재 확인
+- 스키마 미적용: (b) 단일 메커니즘 — bootRun 시 Flyway 자동 적용. `backend/src/main/resources/db/migration/` 디렉토리에 `V1__init_schema.sql` 등 파일 존재 확인
 
-### 5.4 monorepo cwd에서 `DATABASE_URL not found` (또는 다른 env 누락)
+### 5.4 Spring profile 미활성화 (`Could not resolve placeholder`)
 
-> §1.5.1 함정의 사후 발현 — 한 번 막혔다면 본 절로 빠르게 진단.
-
-증상 (스택별 사례):
+증상:
 ```
-# Node + Prisma
-$ cd backend && npx prisma migrate deploy
-Error: Environment variable not found: DATABASE_URL.
-
-# Java + Spring (유사 패턴)
 $ cd backend && ./gradlew bootRun
-... Could not resolve placeholder 'database.url' ...
-
-# Python + SQLAlchemy
-$ cd backend && python -m alembic upgrade head
-... KeyError: 'DATABASE_URL' ...
+... Could not resolve placeholder 'conduit.jwt.secret' in value "${conduit.jwt.secret}" ...
 ```
 
-원인: backend cwd에서 도구를 직접 호출하면 root `.env.{profile}`이 자동 로드되지 않음. backend 자체 env 설정이 없으니 변수 누락.
+원인: `--spring.profiles.active` 미지정 시 `application.yml`만 로드되고 profile-specific yml이 누락됨.
 
-해결: 본 프로젝트는 **(e) 워크스페이스별 .env 분리** — 각 workspace가 자기 `.env`를 보유하므로 root cwd 함정이 발생하지 않음. `.env.{profile}.example`을 `.env`로 복사 후 각 workspace에서 실행하면 자동 로드됨.
-- Prisma: `backend/.env`의 `DATABASE_URL` 자동 참조
-- Vite: `frontend/.env`의 `VITE_API_URL` 자동 참조
+해결: 반드시 profile을 명시해서 부팅:
+```bash
+./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+또는 환경 변수로: `SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun`
 
 ### 5.5 컨테이너 베이스 이미지 함정 (Dockerfile 작성 시 — ADR-0042)
 
@@ -486,13 +494,17 @@ cat backend/settings.gradle* | grep -E 'rootProject.name|^include'
 
 ---
 
-## 6. 외부 의존 (선택)
+## 6. 외부 의존
 
 > 외부 서비스(Auth0·Stripe·S3 등) 또는 컨테이너 의존이 있으면 본 절에 셋업 절차 명시.
 
-- **Bootstrap 4 CDN**: `index.html`에서 CDN `<link>` 태그로 로드. 인터넷 연결 필요.
-- **Google Fonts (Titillium Web, Source Serif Pro)**: CDN 로드. 오프라인 시 시스템 폰트 fallback.
-- **Ionicons**: CDN 로드. 하트/설정 아이콘 등.
+- **PostgreSQL 16+** (필수): backend DB. 설치 방법 택 1:
+  - Docker: `docker run -d --name conduit-pg -e POSTGRES_USER=conduit -e POSTGRES_PASSWORD=conduit -e POSTGRES_DB=conduit_dev -p 5432:5432 postgres:16`
+  - 로컬 설치: `brew install postgresql@16` (macOS) / `sudo apt install postgresql-16` (Ubuntu/WSL2)
+  - DB 생성: `createdb conduit_dev` / `createdb conduit_stg` / `createdb conduit_prod` (profile별)
+- **Bootstrap 4 CDN** (FE): `index.html`에서 CDN `<link>` 태그로 로드. 인터넷 연결 필요.
+- **Google Fonts (Titillium Web, Source Serif Pro)** (FE): CDN 로드. 오프라인 시 시스템 폰트 fallback.
+- **Ionicons** (FE): CDN 로드. 하트/설정 아이콘 등.
 
 ---
 
