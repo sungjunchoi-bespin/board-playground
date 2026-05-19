@@ -1,0 +1,26 @@
+.errorMessages {
+  color: var(--color-danger);
+  list-style: none;
+  padding: 0;
+  margin-bottom: var(--spacing-md);
+  font-weight: 700;
+}
+
+.errorMessages li::before {
+  content: "• ";
+}
+
+.submitBtn {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.submitBtn:hover,
+.submitBtn:focus {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.logoutBtn {
+  width: 100%;
+}
