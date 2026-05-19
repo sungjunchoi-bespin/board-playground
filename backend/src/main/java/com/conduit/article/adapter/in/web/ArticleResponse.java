@@ -13,10 +13,16 @@ public record ArticleResponse(
     List<String> tagList,
     Instant createdAt,
     Instant updatedAt,
+    boolean favorited,
     int favoritesCount,
     AuthorResponse author) {
 
   public static ArticleResponse from(Article article, User author) {
+    return from(article, author, false, false);
+  }
+
+  public static ArticleResponse from(
+      Article article, User author, boolean favorited, boolean following) {
     return new ArticleResponse(
         article.getSlug(),
         article.getTitle(),
@@ -25,9 +31,10 @@ public record ArticleResponse(
         article.getTagList(),
         article.getCreatedAt(),
         article.getUpdatedAt(),
+        favorited,
         article.getFavoritesCount(),
-        new AuthorResponse(author.getUsername(), author.getBio(), author.getImage()));
+        new AuthorResponse(author.getUsername(), author.getBio(), author.getImage(), following));
   }
 
-  public record AuthorResponse(String username, String bio, String image) {}
+  public record AuthorResponse(String username, String bio, String image, boolean following) {}
 }

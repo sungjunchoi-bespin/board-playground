@@ -39,8 +39,10 @@ public class SecurityConfig {
                     // Public endpoints
                     .requestMatchers(HttpMethod.POST, "/api/users", "/api/users/login")
                     .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/articles", "/api/articles/feed")
+                    .requestMatchers(HttpMethod.GET, "/api/articles")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/articles/feed")
+                    .authenticated()
                     .requestMatchers(HttpMethod.GET, "/api/articles/{slug}")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/articles/{slug}/comments")

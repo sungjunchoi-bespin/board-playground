@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.conduit.article.domain.model.Article;
 import com.conduit.article.domain.port.out.ArticleRepository;
+import com.conduit.article.domain.port.out.FollowRepository;
 import com.conduit.shared.exception.ApiException;
 import java.time.Instant;
 import java.util.List;
@@ -26,11 +27,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ArticleServiceTest {
 
   @Mock private ArticleRepository articleRepository;
+  @Mock private FollowRepository followRepository;
   private ArticleService articleService;
 
   @BeforeEach
   void setUp() {
-    articleService = new ArticleService(articleRepository);
+    articleService = new ArticleService(articleRepository, followRepository);
   }
 
   @Nested
