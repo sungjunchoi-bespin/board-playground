@@ -62,3 +62,36 @@ export async function updateArticleApi(
 export async function deleteArticleApi(slug: string): Promise<void> {
   await apiClient.delete(`/articles/${slug}`);
 }
+
+interface ArticlesListResponse {
+  articles: Article[];
+  articlesCount: number;
+}
+
+export interface ListArticlesParams {
+  tag?: string;
+  author?: string;
+  favorited?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listArticlesApi(
+  params: ListArticlesParams = {},
+): Promise<ArticlesListResponse> {
+  const { data } = await apiClient.get<ArticlesListResponse>("/articles", {
+    params,
+  });
+  return data;
+}
+
+export async function feedArticlesApi(
+  limit = 10,
+  offset = 0,
+): Promise<ArticlesListResponse> {
+  const { data } = await apiClient.get<ArticlesListResponse>(
+    "/articles/feed",
+    { params: { limit, offset } },
+  );
+  return data;
+}
