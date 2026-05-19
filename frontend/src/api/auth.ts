@@ -25,3 +25,25 @@ export async function registerApi(
   });
   return data.user;
 }
+
+export async function getCurrentUserApi(): Promise<User> {
+  const { data } = await apiClient.get<AuthResponse>("/user");
+  return data.user;
+}
+
+export interface UpdateUserFields {
+  email?: string;
+  username?: string;
+  password?: string;
+  bio?: string;
+  image?: string;
+}
+
+export async function updateUserApi(
+  fields: UpdateUserFields,
+): Promise<User> {
+  const { data } = await apiClient.put<AuthResponse>("/user", {
+    user: fields,
+  });
+  return data.user;
+}
