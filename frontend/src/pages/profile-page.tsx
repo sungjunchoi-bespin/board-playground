@@ -4,11 +4,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { getProfileApi, followUserApi, unfollowUserApi } from "@/api/profiles";
 import type { Profile } from "@/api/profiles";
 import { listArticlesApi, type Article } from "@/api/articles";
-import FavoriteButton from "@/components/favorite-button";
+import ArticlePreview from "@/components/article-preview";
+import Pagination from "@/components/pagination";
+import LoadingState from "@/components/state/loading-state";
+import EmptyState from "@/components/state/empty-state";
+import { DEFAULT_AVATAR } from "@/constants";
 import styles from "./profile-page.module.css";
 
 const ARTICLES_PER_PAGE = 10;
-const DEFAULT_IMAGE = "https://api.realworld.io/images/smiley-cyrus.jpeg";
 
 type TabType = "my" | "favorited";
 
@@ -32,16 +35,27 @@ function ProfilePage() {
   // Load profile
   useEffect(() => {
     if (!username) return;
+    let cancelled = false;
     setLoading(true);
     getProfileApi(username)
-      .then(setProfile)
-      .catch(() => setProfile(null))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!cancelled) setProfile(res);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [username]);
 
   // Load articles on tab/page change
   useEffect(() => {
     if (!username) return;
+    let cancelled = false;
     setArticlesLoading(true);
     const offset = (currentPage - 1) * ARTICLES_PER_PAGE;
     const params =
@@ -51,14 +65,21 @@ function ProfilePage() {
 
     listArticlesApi(params)
       .then((res) => {
+        if (cancelled) return;
         setArticles(res.articles);
         setArticlesCount(res.articlesCount);
       })
       .catch(() => {
+        if (cancelled) return;
         setArticles([]);
         setArticlesCount(0);
       })
-      .finally(() => setArticlesLoading(false));
+      .finally(() => {
+        if (!cancelled) setArticlesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [username, activeTab, currentPage]);
 
   // Reset page on tab change
@@ -85,7 +106,7 @@ function ProfilePage() {
     return (
       <div className="profile-page">
         <div className="container page">
-          <p>Loading profile...</p>
+          <LoadingState label="Loading profile..." size="lg" />
         </div>
       </div>
     );
@@ -95,7 +116,11 @@ function ProfilePage() {
     return (
       <div className="profile-page">
         <div className="container page">
-          <p>User not found.</p>
+          <EmptyState
+            icon="👤"
+            title="User not found."
+            hint="The profile may not exist or the username is misspelled."
+          />
         </div>
       </div>
     );
@@ -110,7 +135,7 @@ function ProfilePage() {
         <div className="container">
           <img
             className={styles.userImage}
-            src={profile.image || DEFAULT_IMAGE}
+            src={profile.image || DEFAULT_AVATAR}
             alt={profile.username}
           />
           <h4 className={styles.username}>{profile.username}</h4>
@@ -141,11 +166,12 @@ function ProfilePage() {
         <div className="row">
           <div className="col-md-10 offset-md-1">
             {/* Feed Tabs */}
-            <div className={styles.feedToggle}>
+            <nav className={styles.feedToggle} aria-label="Profile article views">
               <ul>
                 <li>
                   <Link
                     to={`/profile/${username}`}
+                    aria-current={activeTab === "my" ? "page" : undefined}
                     className={
                       activeTab === "my"
                         ? styles.tabItemActive
@@ -158,6 +184,9 @@ function ProfilePage() {
                 <li>
                   <Link
                     to={`/profile/${username}/favorites`}
+                    aria-current={
+                      activeTab === "favorited" ? "page" : undefined
+                    }
                     className={
                       activeTab === "favorited"
                         ? styles.tabItemActive
@@ -168,95 +197,35 @@ function ProfilePage() {
                   </Link>
                 </li>
               </ul>
-            </div>
+            </nav>
 
             {/* Articles */}
             {articlesLoading ? (
-              <p className={styles.loadingMessage}>Loading articles...</p>
+              <LoadingState label="Loading articles..." />
             ) : articles.length === 0 ? (
-              <p className={styles.loadingMessage}>
-                No articles are here... yet.
-              </p>
+              <EmptyState
+                icon="📰"
+                title="No articles are here... yet."
+                hint={
+                  activeTab === "favorited"
+                    ? `${profile.username} hasn't favorited any articles yet.`
+                    : `${profile.username} hasn't written any articles yet.`
+                }
+              />
             ) : (
               articles.map((article) => (
                 <ArticlePreview key={article.slug} article={article} />
               ))
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <ul className={styles.pagination}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <li
-                      key={page}
-                      className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
-                    >
-                      <button
-                        className={styles.pageLink}
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </button>
-                    </li>
-                  ),
-                )}
-              </ul>
-            )}
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ArticlePreview({ article }: { article: Article }) {
-  const formattedDate = new Date(article.createdAt).toLocaleDateString(
-    "en-US",
-    { year: "numeric", month: "long", day: "numeric" },
-  );
-
-  return (
-    <div className={styles.articlePreview}>
-      <div className={styles.articleMeta}>
-        <Link to={`/profile/${article.author.username}`}>
-          <img
-            className={styles.authorImage}
-            src={article.author.image || DEFAULT_IMAGE}
-            alt={article.author.username}
-          />
-        </Link>
-        <div className={styles.authorInfo}>
-          <Link
-            to={`/profile/${article.author.username}`}
-            className={styles.authorName}
-          >
-            {article.author.username}
-          </Link>
-          <span className={styles.articleDate}>{formattedDate}</span>
-        </div>
-        <FavoriteButton
-          slug={article.slug}
-          favorited={article.favorited}
-          favoritesCount={article.favoritesCount}
-        />
-      </div>
-      <Link to={`/article/${article.slug}`} className={styles.previewLink}>
-        <h2 className={styles.previewTitle}>{article.title}</h2>
-        <p className={styles.previewDescription}>{article.description}</p>
-        <div className={styles.readMore}>
-          <span className={styles.readMoreText}>Read more...</span>
-          {article.tagList.length > 0 && (
-            <ul className={styles.previewTagList}>
-              {article.tagList.map((tag) => (
-                <li key={tag} className={styles.previewTag}>
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Link>
     </div>
   );
 }

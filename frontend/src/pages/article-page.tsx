@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { marked } from "marked";
 import { useAuth } from "@/hooks/use-auth";
 import { getArticleApi, deleteArticleApi } from "@/api/articles";
 import type { Article } from "@/api/articles";
 import FavoriteButton from "@/components/favorite-button";
+import LoadingState from "@/components/state/loading-state";
+import EmptyState from "@/components/state/empty-state";
+import { DEFAULT_AVATAR } from "@/constants";
+import { formatArticleDate } from "@/utils/date";
 import {
   listCommentsApi,
   addCommentApi,
@@ -22,11 +26,22 @@ function ArticlePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (slug) {
-      getArticleApi(slug)
-        .then(setArticle)
-        .finally(() => setLoading(false));
-    }
+    if (!slug) return;
+    let cancelled = false;
+    setLoading(true);
+    getArticleApi(slug)
+      .then((res) => {
+        if (!cancelled) setArticle(res);
+      })
+      .catch(() => {
+        if (!cancelled) setArticle(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   async function handleDelete() {
@@ -45,7 +60,7 @@ function ArticlePage() {
     return (
       <div className="article-page">
         <div className="container page">
-          <p>Loading article...</p>
+          <LoadingState label="Loading article..." size="lg" />
         </div>
       </div>
     );
@@ -55,22 +70,22 @@ function ArticlePage() {
     return (
       <div className="article-page">
         <div className="container page">
-          <p>Article not found.</p>
+          <EmptyState
+            icon="🔍"
+            title="Article not found."
+            hint="The article may have been removed or the link is incorrect."
+          />
         </div>
       </div>
     );
   }
 
   const isAuthor = user?.username === article.author.username;
-  const formattedDate = new Date(article.createdAt).toLocaleDateString(
-    "en-US",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
+  const formattedDate = formatArticleDate(article.createdAt);
+  const bodyHtml = useMemo(
+    () => marked.parse(article.body) as string,
+    [article.body],
   );
-  const bodyHtml = marked.parse(article.body) as string;
 
   return (
     <div className="article-page">
@@ -78,19 +93,16 @@ function ArticlePage() {
         <div className="container">
           <h1 className={styles.bannerTitle}>{article.title}</h1>
           <div className={styles.articleMeta}>
-            <Link to={`/@${article.author.username}`}>
+            <Link to={`/profile/${article.author.username}`}>
               <img
                 className={styles.authorImage}
-                src={
-                  article.author.image ||
-                  "https://api.realworld.io/images/smiley-cyrus.jpeg"
-                }
-                alt={article.author.username}
+                src={article.author.image || DEFAULT_AVATAR}
+                alt=""
               />
             </Link>
             <div className={styles.authorInfo}>
               <Link
-                to={`/@${article.author.username}`}
+                to={`/profile/${article.author.username}`}
                 className={styles.authorName}
               >
                 {article.author.username}
@@ -103,14 +115,16 @@ function ArticlePage() {
                   to={`/editor/${article.slug}`}
                   className={`btn btn-sm btn-outline-secondary ${styles.editBtn}`}
                 >
-                  <i className="ion-edit" /> Edit Article
+                  <i className="ion-edit" aria-hidden="true" /> Edit Article
                 </Link>
                 <button
                   className={`btn btn-sm btn-outline-danger ${styles.deleteBtn}`}
                   onClick={handleDelete}
                   disabled={deleting}
+                  aria-label="Delete article"
                 >
-                  <i className="ion-trash-a" /> Delete Article
+                  <i className="ion-trash-a" aria-hidden="true" /> Delete
+                  Article
                 </button>
               </div>
             ) : (
@@ -153,8 +167,6 @@ function ArticlePage() {
   );
 }
 
-const DEFAULT_IMAGE = "https://api.realworld.io/images/smiley-cyrus.jpeg";
-
 function CommentSection({ slug }: { slug: string }) {
   const { user, isAuthenticated } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -162,7 +174,15 @@ function CommentSection({ slug }: { slug: string }) {
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
-    listCommentsApi(slug).then(setComments).catch(() => {});
+    let cancelled = false;
+    listCommentsApi(slug)
+      .then((res) => {
+        if (!cancelled) setComments(res);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   async function handlePostComment(e: React.FormEvent) {
@@ -203,7 +223,7 @@ function CommentSection({ slug }: { slug: string }) {
           <div className={styles.commentFormFooter}>
             <img
               className={styles.commentFormImage}
-              src={user?.image || DEFAULT_IMAGE}
+              src={user?.image || DEFAULT_AVATAR}
               alt={user?.username || ""}
             />
             <button
@@ -243,10 +263,7 @@ function CommentCard({
   currentUsername?: string;
   onDelete: (id: number) => void;
 }) {
-  const formattedDate = new Date(comment.createdAt).toLocaleDateString(
-    "en-US",
-    { year: "numeric", month: "long", day: "numeric" },
-  );
+  const formattedDate = formatArticleDate(comment.createdAt);
   const isOwn = currentUsername === comment.author.username;
 
   return (
@@ -256,7 +273,7 @@ function CommentCard({
         <Link to={`/profile/${comment.author.username}`}>
           <img
             className={styles.commentAuthorImage}
-            src={comment.author.image || DEFAULT_IMAGE}
+            src={comment.author.image || DEFAULT_AVATAR}
             alt={comment.author.username}
           />
         </Link>
@@ -272,8 +289,9 @@ function CommentCard({
             className={styles.commentDeleteBtn}
             onClick={() => onDelete(comment.id)}
             title="Delete comment"
+            aria-label="Delete comment"
           >
-            🗑
+            <span aria-hidden="true">🗑</span>
           </button>
         )}
       </div>

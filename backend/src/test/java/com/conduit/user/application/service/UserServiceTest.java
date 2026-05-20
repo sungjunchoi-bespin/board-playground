@@ -42,11 +42,12 @@ class UserServiceTest {
       when(userRepository.existsByUsername("testuser")).thenReturn(false);
       when(passwordEncoder.encode("password123")).thenReturn("hashed");
       when(userRepository.save(any(User.class)))
-          .thenAnswer(inv -> {
-            User u = inv.getArgument(0);
-            return new User(1L, u.getEmail(), u.getUsername(), u.getPassword(), u.getBio(),
-                u.getImage());
-          });
+          .thenAnswer(
+              inv -> {
+                User u = inv.getArgument(0);
+                return new User(
+                    1L, u.getEmail(), u.getUsername(), u.getPassword(), u.getBio(), u.getImage());
+              });
 
       User result = userService.register("testuser", "test@test.com", "password123");
 
@@ -166,8 +167,7 @@ class UserServiceTest {
       when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
       when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
 
-      assertThatThrownBy(
-          () -> userService.update(1L, "taken@test.com", null, null, null, null))
+      assertThatThrownBy(() -> userService.update(1L, "taken@test.com", null, null, null, null))
           .isInstanceOf(ApiException.ValidationException.class)
           .hasMessageContaining("email has already been taken");
     }

@@ -9,7 +9,8 @@ public interface FollowJpaRepository extends JpaRepository<FollowJpaEntity, Foll
 
   boolean existsByFollowerIdAndFolloweeId(Long followerId, Long followeeId);
 
-  @Query("SELECT f.followeeId FROM FollowJpaEntity f WHERE f.followerId = :followerId AND f.followeeId IN :followeeIds")
+  @Query(
+      "SELECT f.followeeId FROM FollowJpaEntity f WHERE f.followerId = :followerId AND f.followeeId IN :followeeIds")
   List<Long> findFolloweeIdsByFollowerIdAndFolloweeIdIn(
       @Param("followerId") Long followerId, @Param("followeeIds") List<Long> followeeIds);
 

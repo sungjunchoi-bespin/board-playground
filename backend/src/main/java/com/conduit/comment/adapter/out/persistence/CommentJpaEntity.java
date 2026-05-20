@@ -1,7 +1,6 @@
 package com.conduit.comment.adapter.out.persistence;
 
 import com.conduit.shared.config.BaseEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -10,24 +9,32 @@ import jakarta.persistence.Table;
 @Table(name = "comments")
 public class CommentJpaEntity extends BaseEntity {
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String body;
+  @Column(nullable = false, columnDefinition = "TEXT")
+  private String body;
 
-    @Column(name = "article_id", nullable = false)
-    private Long articleId;
+  @Column(name = "article_id", nullable = false)
+  private Long articleId;
 
-    @Column(name = "author_id", nullable = false)
-    private Long authorId;
+  @Column(name = "author_id", nullable = false)
+  private Long authorId;
 
-    protected CommentJpaEntity() {}
+  protected CommentJpaEntity() {}
 
-    public CommentJpaEntity(String body, Long articleId, Long authorId) {
-        this.body = body;
-        this.articleId = articleId;
-        this.authorId = authorId;
-    }
+  public CommentJpaEntity(String body, Long articleId, Long authorId) {
+    this.body = body;
+    this.articleId = articleId;
+    this.authorId = authorId;
+  }
 
-    public String getBody() { return body; }
-    public Long getArticleId() { return articleId; }
-    public Long getAuthorId() { return authorId; }
+  public String getBody() {
+    return body;
+  }
+
+  public Long getArticleId() {
+    return articleId;
+  }
+
+  public Long getAuthorId() {
+    return authorId;
+  }
 }

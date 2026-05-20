@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import {
   listArticlesApi,
@@ -7,7 +6,10 @@ import {
   type Article,
 } from "@/api/articles";
 import { getTagsApi } from "@/api/tags";
-import FavoriteButton from "@/components/favorite-button";
+import ArticlePreview from "@/components/article-preview";
+import Pagination from "@/components/pagination";
+import LoadingState from "@/components/state/loading-state";
+import EmptyState from "@/components/state/empty-state";
 import styles from "./home-page.module.css";
 
 const ARTICLES_PER_PAGE = 10;
@@ -25,10 +27,25 @@ function HomePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
 
   // Load tags once
   useEffect(() => {
-    getTagsApi().then(setTags).catch(() => {});
+    let cancelled = false;
+    setTagsLoading(true);
+    getTagsApi()
+      .then((res) => {
+        if (!cancelled) setTags(res);
+      })
+      .catch(() => {
+        if (!cancelled) setTags([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTagsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Reset to appropriate tab when auth state changes
@@ -40,6 +57,7 @@ function HomePage() {
 
   // Fetch articles when tab/page/tag changes
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     const offset = (currentPage - 1) * ARTICLES_PER_PAGE;
 
@@ -59,14 +77,21 @@ function HomePage() {
 
     request
       .then((res) => {
+        if (cancelled) return;
         setArticles(res.articles);
         setArticlesCount(res.articlesCount);
       })
       .catch(() => {
+        if (cancelled) return;
         setArticles([]);
         setArticlesCount(0);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, currentPage, selectedTag]);
 
   function handleTagClick(tag: string) {
@@ -100,11 +125,13 @@ function HomePage() {
         <div className="row">
           <div className="col-md-9">
             {/* Feed Tabs */}
-            <div className={styles.feedToggle}>
-              <ul>
+            <nav className={styles.feedToggle} aria-label="Article feeds">
+              <ul role="tablist">
                 {isAuthenticated && (
-                  <li>
+                  <li role="presentation">
                     <button
+                      role="tab"
+                      aria-selected={activeTab === "your"}
                       className={
                         activeTab === "your"
                           ? styles.tabItemActive
@@ -116,8 +143,10 @@ function HomePage() {
                     </button>
                   </li>
                 )}
-                <li>
+                <li role="presentation">
                   <button
+                    role="tab"
+                    aria-selected={activeTab === "global"}
                     className={
                       activeTab === "global"
                         ? styles.tabItemActive
@@ -129,125 +158,76 @@ function HomePage() {
                   </button>
                 </li>
                 {activeTab === "tag" && selectedTag && (
-                  <li>
-                    <button className={styles.tabItemActive}>
+                  <li role="presentation">
+                    <button
+                      role="tab"
+                      aria-selected="true"
+                      className={styles.tabItemActive}
+                    >
                       # {selectedTag}
                     </button>
                   </li>
                 )}
               </ul>
-            </div>
+            </nav>
 
             {/* Articles */}
             {loading ? (
-              <p className={styles.loadingMessage}>Loading articles...</p>
+              <LoadingState label="Loading articles..." />
             ) : articles.length === 0 ? (
-              <p className={styles.loadingMessage}>
-                No articles are here... yet.
-              </p>
+              <EmptyState
+                icon="📰"
+                title="No articles are here... yet."
+                hint={
+                  activeTab === "your"
+                    ? "Follow other users to see their articles, or write your own."
+                    : "Be the first to share an article."
+                }
+              />
             ) : (
               articles.map((article) => (
                 <ArticlePreview key={article.slug} article={article} />
               ))
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <ul className={styles.pagination}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <li
-                      key={page}
-                      className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
-                    >
-                      <button
-                        className={styles.pageLink}
-                        onClick={() => setCurrentPage(page)}
-                      >
-                        {page}
-                      </button>
-                    </li>
-                  ),
-                )}
-              </ul>
-            )}
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
 
           <div className="col-md-3">
-            <TagSidebar tags={tags} onTagClick={handleTagClick} />
+            <TagSidebar
+              tags={tags}
+              loading={tagsLoading}
+              onTagClick={handleTagClick}
+            />
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ArticlePreview({ article }: { article: Article }) {
-  const formattedDate = new Date(article.createdAt).toLocaleDateString(
-    "en-US",
-    { year: "numeric", month: "long", day: "numeric" },
-  );
-
-  return (
-    <div className={styles.articlePreview}>
-      <div className={styles.articleMeta}>
-        <Link to={`/profile/${article.author.username}`}>
-          <img
-            className={styles.authorImage}
-            src={
-              article.author.image ||
-              "https://api.realworld.io/images/smiley-cyrus.jpeg"
-            }
-            alt={article.author.username}
-          />
-        </Link>
-        <div className={styles.authorInfo}>
-          <Link
-            to={`/profile/${article.author.username}`}
-            className={styles.authorName}
-          >
-            {article.author.username}
-          </Link>
-          <span className={styles.articleDate}>{formattedDate}</span>
-        </div>
-        <FavoriteButton
-          slug={article.slug}
-          favorited={article.favorited}
-          favoritesCount={article.favoritesCount}
-        />
-      </div>
-      <Link to={`/article/${article.slug}`} className={styles.previewLink}>
-        <h2 className={styles.previewTitle}>{article.title}</h2>
-        <p className={styles.previewDescription}>{article.description}</p>
-        <div className={styles.readMore}>
-          <span className={styles.readMoreText}>Read more...</span>
-          {article.tagList.length > 0 && (
-            <ul className={styles.previewTagList}>
-              {article.tagList.map((tag) => (
-                <li key={tag} className={styles.previewTag}>
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Link>
     </div>
   );
 }
 
 function TagSidebar({
   tags,
+  loading,
   onTagClick,
 }: {
   tags: string[];
+  loading: boolean;
   onTagClick: (tag: string) => void;
 }) {
   return (
-    <div className={styles.sidebar}>
-      <p className={styles.sidebarTitle}>Popular Tags</p>
-      {tags.length === 0 ? (
-        <p>Loading tags...</p>
+    <aside className={styles.sidebar} aria-labelledby="popular-tags-title">
+      <p id="popular-tags-title" className={styles.sidebarTitle}>
+        Popular Tags
+      </p>
+      {loading ? (
+        <LoadingState label="Loading tags..." size="sm" />
+      ) : tags.length === 0 ? (
+        <p className={styles.sidebarEmpty}>No tags yet.</p>
       ) : (
         <div className={styles.tagListSidebar}>
           {tags.map((tag) => (
@@ -255,13 +235,14 @@ function TagSidebar({
               key={tag}
               className={styles.sidebarTag}
               onClick={() => onTagClick(tag)}
+              aria-label={`Filter by ${tag} tag`}
             >
               {tag}
             </button>
           ))}
         </div>
       )}
-    </div>
+    </aside>
   );
 }
 

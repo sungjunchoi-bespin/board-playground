@@ -1,18 +1,7 @@
-.errorMessages {
-  color: var(--color-danger);
-  list-style: none;
-  padding: 0;
-  margin-bottom: var(--spacing-md);
-  font-weight: 700;
-}
-
-.errorMessages li::before {
-  content: "• ";
-}
-
 .submitBtn {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
+  transition: var(--transition-base);
 }
 
 .submitBtn:hover,
@@ -21,6 +10,12 @@
   border-color: var(--color-primary-dark);
 }
 
+.submitBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .logoutBtn {
   width: 100%;
+  transition: var(--transition-base);
 }

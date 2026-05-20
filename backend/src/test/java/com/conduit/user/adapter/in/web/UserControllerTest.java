@@ -29,15 +29,17 @@ class UserControllerTest {
   @Autowired private JwtTokenProvider jwtTokenProvider;
 
   private String registerUser(String username, String email, String password) throws Exception {
-    String body = """
+    String body =
+        """
         {"user":{"username":"%s","email":"%s","password":"%s"}}
-        """.formatted(username, email, password);
+        """
+            .formatted(username, email, password);
 
-    MvcResult result = mockMvc.perform(post("/api/users")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(body))
-        .andExpect(status().isOk())
-        .andReturn();
+    MvcResult result =
+        mockMvc
+            .perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isOk())
+            .andReturn();
 
     return result.getResponse().getContentAsString();
   }
@@ -49,9 +51,12 @@ class UserControllerTest {
     @Test
     @DisplayName("should register a new user")
     void success() throws Exception {
-      mockMvc.perform(post("/api/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              post("/api/users")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"username":"jacob","email":"jake@jake.com","password":"jakejake1"}}
                   """))
           .andExpect(status().isOk())
@@ -67,9 +72,12 @@ class UserControllerTest {
     void duplicateEmail() throws Exception {
       registerUser("first", "dupe@test.com", "password123");
 
-      mockMvc.perform(post("/api/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              post("/api/users")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"username":"second","email":"dupe@test.com","password":"password123"}}
                   """))
           .andExpect(status().isUnprocessableEntity())
@@ -81,9 +89,12 @@ class UserControllerTest {
     void duplicateUsername() throws Exception {
       registerUser("taken", "first@test.com", "password123");
 
-      mockMvc.perform(post("/api/users")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              post("/api/users")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"username":"taken","email":"second@test.com","password":"password123"}}
                   """))
           .andExpect(status().isUnprocessableEntity());
@@ -99,9 +110,12 @@ class UserControllerTest {
     void success() throws Exception {
       registerUser("jacob", "jake@jake.com", "jakejake1");
 
-      mockMvc.perform(post("/api/users/login")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              post("/api/users/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"email":"jake@jake.com","password":"jakejake1"}}
                   """))
           .andExpect(status().isOk())
@@ -115,9 +129,12 @@ class UserControllerTest {
     void wrongPassword() throws Exception {
       registerUser("jacob", "jake@jake.com", "jakejake1");
 
-      mockMvc.perform(post("/api/users/login")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              post("/api/users/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"email":"jake@jake.com","password":"wrongwrong"}}
                   """))
           .andExpect(status().isUnauthorized());
@@ -126,9 +143,12 @@ class UserControllerTest {
     @Test
     @DisplayName("should return 401 for unknown email")
     void unknownEmail() throws Exception {
-      mockMvc.perform(post("/api/users/login")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              post("/api/users/login")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"email":"noone@test.com","password":"password123"}}
                   """))
           .andExpect(status().isUnauthorized());
@@ -145,19 +165,24 @@ class UserControllerTest {
       registerUser("jacob", "jake@jake.com", "jakejake1");
 
       // Login to get a valid token
-      MvcResult loginResult = mockMvc.perform(post("/api/users/login")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      MvcResult loginResult =
+          mockMvc
+              .perform(
+                  post("/api/users/login")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          """
                   {"user":{"email":"jake@jake.com","password":"jakejake1"}}
                   """))
-          .andExpect(status().isOk())
-          .andReturn();
+              .andExpect(status().isOk())
+              .andReturn();
 
-      String token = com.jayway.jsonpath.JsonPath
-          .read(loginResult.getResponse().getContentAsString(), "$.user.token");
+      String token =
+          com.jayway.jsonpath.JsonPath.read(
+              loginResult.getResponse().getContentAsString(), "$.user.token");
 
-      mockMvc.perform(get("/api/user")
-              .header("Authorization", "Token " + token))
+      mockMvc
+          .perform(get("/api/user").header("Authorization", "Token " + token))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.user.email").value("jake@jake.com"))
           .andExpect(jsonPath("$.user.username").value("jacob"));
@@ -166,8 +191,7 @@ class UserControllerTest {
     @Test
     @DisplayName("should return 401 without JWT")
     void unauthorized() throws Exception {
-      mockMvc.perform(get("/api/user"))
-          .andExpect(status().isUnauthorized());
+      mockMvc.perform(get("/api/user")).andExpect(status().isUnauthorized());
     }
   }
 
@@ -180,21 +204,29 @@ class UserControllerTest {
     void success() throws Exception {
       registerUser("jacob", "jake@jake.com", "jakejake1");
 
-      MvcResult loginResult = mockMvc.perform(post("/api/users/login")
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      MvcResult loginResult =
+          mockMvc
+              .perform(
+                  post("/api/users/login")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(
+                          """
                   {"user":{"email":"jake@jake.com","password":"jakejake1"}}
                   """))
-          .andExpect(status().isOk())
-          .andReturn();
+              .andExpect(status().isOk())
+              .andReturn();
 
-      String token = com.jayway.jsonpath.JsonPath
-          .read(loginResult.getResponse().getContentAsString(), "$.user.token");
+      String token =
+          com.jayway.jsonpath.JsonPath.read(
+              loginResult.getResponse().getContentAsString(), "$.user.token");
 
-      mockMvc.perform(put("/api/user")
-              .header("Authorization", "Token " + token)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content("""
+      mockMvc
+          .perform(
+              put("/api/user")
+                  .header("Authorization", "Token " + token)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      """
                   {"user":{"bio":"I like to code","image":"https://i.imgur.com/test.jpg"}}
                   """))
           .andExpect(status().isOk())

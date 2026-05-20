@@ -171,8 +171,7 @@ class ArticleListFeedIntegrationTest {
       UserInfo author = registerUser("theauthor", "author@test.com", "password123");
       UserInfo favUser = registerUser("favuser", "fav@test.com", "password123");
 
-      String favSlug =
-          createArticle(author.token(), "Favorited Article", "Desc", "Body", "");
+      String favSlug = createArticle(author.token(), "Favorited Article", "Desc", "Body", "");
       createArticle(author.token(), "Normal Article", "Desc", "Body", "");
 
       Long favArticleId = findArticleIdBySlug(favSlug);
@@ -254,8 +253,7 @@ class ArticleListFeedIntegrationTest {
       UserInfo reader = registerUser("reader", "reader@test.com", "password123");
       createArticle(author.token(), "Great Article", "Desc", "Body", "");
 
-      followJpaRepository.saveAndFlush(
-          new FollowJpaEntity(reader.userId(), author.userId()));
+      followJpaRepository.saveAndFlush(new FollowJpaEntity(reader.userId(), author.userId()));
 
       mockMvc
           .perform(get("/api/articles").header("Authorization", "Token " + reader.token()))
@@ -271,8 +269,7 @@ class ArticleListFeedIntegrationTest {
       String slug = createArticle(author.token(), "Great Article", "Desc", "Body", "");
 
       Long articleId = findArticleIdBySlug(slug);
-      followJpaRepository.saveAndFlush(
-          new FollowJpaEntity(reader.userId(), author.userId()));
+      followJpaRepository.saveAndFlush(new FollowJpaEntity(reader.userId(), author.userId()));
       favoriteJpaRepository.saveAndFlush(new FavoriteJpaEntity(reader.userId(), articleId));
 
       mockMvc
@@ -301,8 +298,7 @@ class ArticleListFeedIntegrationTest {
       UserInfo user = registerUser("jacob", "jake@jake.com", "jakejake1");
 
       mockMvc
-          .perform(
-              get("/api/articles/feed").header("Authorization", "Token " + user.token()))
+          .perform(get("/api/articles/feed").header("Authorization", "Token " + user.token()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articles", hasSize(0)))
           .andExpect(jsonPath("$.articlesCount").value(0));
@@ -318,13 +314,10 @@ class ArticleListFeedIntegrationTest {
       createArticle(followed.token(), "Followed Article", "Desc", "Body", "");
       createArticle(stranger.token(), "Stranger Article", "Desc", "Body", "");
 
-      followJpaRepository.saveAndFlush(
-          new FollowJpaEntity(follower.userId(), followed.userId()));
+      followJpaRepository.saveAndFlush(new FollowJpaEntity(follower.userId(), followed.userId()));
 
       mockMvc
-          .perform(
-              get("/api/articles/feed")
-                  .header("Authorization", "Token " + follower.token()))
+          .perform(get("/api/articles/feed").header("Authorization", "Token " + follower.token()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articles", hasSize(1)))
           .andExpect(jsonPath("$.articlesCount").value(1))
@@ -342,8 +335,7 @@ class ArticleListFeedIntegrationTest {
       createArticle(followed.token(), "Article 2", "Desc", "Body", "");
       createArticle(followed.token(), "Article 3", "Desc", "Body", "");
 
-      followJpaRepository.saveAndFlush(
-          new FollowJpaEntity(follower.userId(), followed.userId()));
+      followJpaRepository.saveAndFlush(new FollowJpaEntity(follower.userId(), followed.userId()));
 
       mockMvc
           .perform(
@@ -364,13 +356,10 @@ class ArticleListFeedIntegrationTest {
 
       createArticle(followed.token(), "Feed Article", "Desc", "Body", "\"tech\"");
 
-      followJpaRepository.saveAndFlush(
-          new FollowJpaEntity(follower.userId(), followed.userId()));
+      followJpaRepository.saveAndFlush(new FollowJpaEntity(follower.userId(), followed.userId()));
 
       mockMvc
-          .perform(
-              get("/api/articles/feed")
-                  .header("Authorization", "Token " + follower.token()))
+          .perform(get("/api/articles/feed").header("Authorization", "Token " + follower.token()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articles[0].slug").isNotEmpty())
           .andExpect(jsonPath("$.articles[0].title").value("Feed Article"))
@@ -389,16 +378,13 @@ class ArticleListFeedIntegrationTest {
 
       String slug = createArticle(followed.token(), "Feed Article", "Desc", "Body", "");
 
-      followJpaRepository.saveAndFlush(
-          new FollowJpaEntity(follower.userId(), followed.userId()));
+      followJpaRepository.saveAndFlush(new FollowJpaEntity(follower.userId(), followed.userId()));
 
       Long articleId = findArticleIdBySlug(slug);
       favoriteJpaRepository.saveAndFlush(new FavoriteJpaEntity(follower.userId(), articleId));
 
       mockMvc
-          .perform(
-              get("/api/articles/feed")
-                  .header("Authorization", "Token " + follower.token()))
+          .perform(get("/api/articles/feed").header("Authorization", "Token " + follower.token()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articles[0].favorited").value(true))
           .andExpect(jsonPath("$.articles[0].author.following").value(true));

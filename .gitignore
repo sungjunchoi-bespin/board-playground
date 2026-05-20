@@ -84,3 +84,12 @@ service-account*.json
 .claude/skills/setup-deploy
 .claude/skills/ship
 .claude/skills/unfreeze
+
+# Stray npm lockfile (project uses pnpm)
+frontend/package-lock.json
+
+# Playwright test results (run output, not source)
+frontend/test-results/
+
+# TypeScript incremental build info (regenerated on build)
+frontend/tsconfig.tsbuildinfo

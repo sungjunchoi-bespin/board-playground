@@ -68,9 +68,20 @@ export default function FavoriteButton({
     className = favorited ? styles.favoriteBtnActive : styles.favoriteBtn;
   }
 
+  const actionLabel = favorited
+    ? `Unfavorite article (${count} favorites)`
+    : `Favorite article (${count} favorites)`;
+
   return (
-    <button className={className} onClick={handleClick} disabled={loading}>
-      {favorited ? "♥" : "♡"}{" "}
+    <button
+      className={className}
+      onClick={handleClick}
+      disabled={loading}
+      aria-pressed={favorited}
+      aria-label={actionLabel}
+      data-testid="favorite-button"
+    >
+      <span aria-hidden="true">{favorited ? "♥" : "♡"}</span>{" "}
       {size === "lg"
         ? `${favorited ? "Unfavorite" : "Favorite"} Article (${count})`
         : count}

@@ -17,8 +17,12 @@ class ArticleTest {
     @DisplayName("should create article with generated slug")
     void success() {
       Article article =
-          Article.create("How to train your dragon", "Ever wonder how?", "It takes a village...",
-              1L, List.of("dragons", "training"));
+          Article.create(
+              "How to train your dragon",
+              "Ever wonder how?",
+              "It takes a village...",
+              1L,
+              List.of("dragons", "training"));
 
       assertThat(article.getId()).isNull();
       assertThat(article.getSlug()).isEqualTo("how-to-train-your-dragon");
@@ -92,8 +96,7 @@ class ArticleTest {
     @Test
     @DisplayName("should update title and regenerate slug")
     void updateTitle() {
-      Article article =
-          Article.create("Old Title", "Desc", "Body", 1L, List.of());
+      Article article = Article.create("Old Title", "Desc", "Body", 1L, List.of());
 
       article.update("New Title", null, null);
 
@@ -106,8 +109,7 @@ class ArticleTest {
     @Test
     @DisplayName("should update description only")
     void updateDescription() {
-      Article article =
-          Article.create("Title", "Old Desc", "Body", 1L, List.of());
+      Article article = Article.create("Title", "Old Desc", "Body", 1L, List.of());
 
       article.update(null, "New Desc", null);
 
@@ -119,8 +121,7 @@ class ArticleTest {
     @Test
     @DisplayName("should update body only")
     void updateBody() {
-      Article article =
-          Article.create("Title", "Desc", "Old Body", 1L, List.of());
+      Article article = Article.create("Title", "Desc", "Old Body", 1L, List.of());
 
       article.update(null, null, "New Body");
 
@@ -130,8 +131,7 @@ class ArticleTest {
     @Test
     @DisplayName("should update all fields")
     void updateAll() {
-      Article article =
-          Article.create("Old Title", "Old Desc", "Old Body", 1L, List.of());
+      Article article = Article.create("Old Title", "Old Desc", "Old Body", 1L, List.of());
 
       article.update("New Title", "New Desc", "New Body");
 

@@ -9,7 +9,8 @@ public interface FavoriteJpaRepository extends JpaRepository<FavoriteJpaEntity, 
 
   boolean existsByUserIdAndArticleId(Long userId, Long articleId);
 
-  @Query("SELECT f.articleId FROM FavoriteJpaEntity f WHERE f.userId = :userId AND f.articleId IN :articleIds")
+  @Query(
+      "SELECT f.articleId FROM FavoriteJpaEntity f WHERE f.userId = :userId AND f.articleId IN :articleIds")
   List<Long> findArticleIdsByUserIdAndArticleIdIn(
       @Param("userId") Long userId, @Param("articleIds") List<Long> articleIds);
 

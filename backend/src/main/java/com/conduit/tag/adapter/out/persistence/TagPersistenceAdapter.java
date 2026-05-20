@@ -1,6 +1,5 @@
 package com.conduit.tag.adapter.out.persistence;
 
-import com.conduit.article.adapter.out.persistence.TagJpaEntity;
 import com.conduit.article.adapter.out.persistence.TagJpaRepository;
 import com.conduit.tag.domain.model.Tag;
 import com.conduit.tag.domain.port.out.TagRepository;

@@ -1,29 +1,29 @@
 .userBanner {
-  background: #333;
-  padding: 2rem 0 1rem;
+  background: var(--color-bg-dark);
+  padding: var(--spacing-lg) 0 var(--spacing-md);
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .userImage {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
   object-fit: cover;
 }
 
 .username {
-  color: #fff;
+  color: var(--color-bg-inverse);
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--spacing-sm);
 }
 
 .userBio {
-  color: #aaa;
+  color: var(--color-text-light);
   font-size: 0.9rem;
-  margin: 0 0 1rem;
+  margin: 0 0 var(--spacing-md);
   font-weight: 300;
   max-width: 450px;
   margin-left: auto;
@@ -34,54 +34,57 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.25rem 0.5rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: 0.2rem;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: var(--transition-base);
 }
 
 .editSettingsBtn {
   composes: actionBtn;
-  color: #999;
-  border: 1px solid #999;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-text-muted);
   background: transparent;
 }
 
-.editSettingsBtn:hover {
-  color: #fff;
-  background: #999;
+.editSettingsBtn:hover,
+.editSettingsBtn:focus-visible {
+  color: var(--color-bg-inverse);
+  background: var(--color-text-muted);
 }
 
 .followBtn {
   composes: actionBtn;
-  color: #999;
-  border: 1px solid #999;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-text-muted);
   background: transparent;
 }
 
-.followBtn:hover {
-  color: #fff;
-  background: #999;
+.followBtn:hover,
+.followBtn:focus-visible {
+  color: var(--color-bg-inverse);
+  background: var(--color-text-muted);
 }
 
 .unfollowBtn {
   composes: actionBtn;
-  color: #fff;
-  border: 1px solid #5cb85c;
-  background: #5cb85c;
+  color: var(--color-bg-inverse);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
 }
 
-.unfollowBtn:hover {
-  background: #449d44;
-  border-color: #449d44;
+.unfollowBtn:hover,
+.unfollowBtn:focus-visible {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
 }
 
-/* Feed Tabs */
+/* ─── Feed Tabs ─── */
 .feedToggle {
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--spacing-md);
 }
 
 .feedToggle ul {
@@ -89,169 +92,46 @@
   padding: 0;
   margin: 0;
   display: flex;
+  flex-wrap: wrap;
 }
 
 .tabItem {
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 0.5rem 1rem;
-  color: #aaa;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-text-light);
   cursor: pointer;
   font-size: 0.95rem;
+  transition: var(--transition-base);
 }
 
 .tabItem:hover {
-  color: #5cb85c;
+  color: var(--color-primary);
 }
 
 .tabItemActive {
   composes: tabItem;
-  color: #5cb85c;
-  border-bottom: 2px solid #5cb85c;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
 }
 
-/* Article Preview (reuse from home) */
-.articlePreview {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 1.5rem 0;
-}
+/* ─── Responsive: mobile ─── */
+@media (max-width: 768px) {
+  .userBanner {
+    padding: var(--spacing-md) 0;
+  }
 
-.articleMeta {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
+  .userImage {
+    width: 80px;
+    height: 80px;
+  }
 
-.authorImage {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-}
+  .username {
+    font-size: 1.25rem;
+  }
 
-.authorInfo {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.authorName {
-  color: #5cb85c;
-  font-weight: 500;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.authorName:hover {
-  text-decoration: underline;
-}
-
-.articleDate {
-  color: #bbb;
-  font-size: 0.8rem;
-  font-weight: 300;
-}
-
-.favCount {
-  color: #5cb85c;
-  border: 1px solid #5cb85c;
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.2rem;
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.previewLink {
-  text-decoration: none;
-  display: block;
-}
-
-.previewTitle {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin: 0 0 0.25rem;
-  color: #373a3c;
-}
-
-.previewDescription {
-  color: #999;
-  font-weight: 300;
-  font-size: 0.95rem;
-  margin: 0 0 0.75rem;
-  line-height: 1.3;
-}
-
-.readMore {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.readMoreText {
-  color: #bbb;
-  font-size: 0.8rem;
-}
-
-.previewTagList {
-  list-style: none;
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.previewTag {
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  border: 1px solid #ddd;
-  color: #aaa;
-  border-radius: 10rem;
-}
-
-/* Pagination */
-.pagination {
-  list-style: none;
-  display: flex;
-  gap: 0;
-  padding: 0;
-  margin: 1.5rem 0;
-}
-
-.pageItem {
-  border: 1px solid #ddd;
-  margin-left: -1px;
-}
-
-.pageItemActive {
-  composes: pageItem;
-  background: #5cb85c;
-}
-
-.pageItemActive .pageLink {
-  color: #fff;
-}
-
-.pageLink {
-  display: block;
-  padding: 0.35rem 0.75rem;
-  color: #5cb85c;
-  text-decoration: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.pageLink:hover {
-  background: #eceeef;
-}
-
-.loadingMessage {
-  padding: 1.5rem 0;
-  font-size: 1rem;
-  color: #999;
+  .userBio {
+    padding: 0 var(--spacing-md);
+  }
 }

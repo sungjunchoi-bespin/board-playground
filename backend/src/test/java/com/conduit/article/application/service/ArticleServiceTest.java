@@ -3,7 +3,6 @@ package com.conduit.article.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -99,8 +98,7 @@ class ArticleServiceTest {
               });
 
       Article result =
-          articleService.create(
-              "How to train your dragon", "Desc", "Body", 1L, List.of());
+          articleService.create("How to train your dragon", "Desc", "Body", 1L, List.of());
 
       assertThat(result.getSlug()).isEqualTo("how-to-train-your-dragon-1");
     }
@@ -165,11 +163,9 @@ class ArticleServiceTest {
               Instant.now());
       when(articleRepository.findBySlug("old-title")).thenReturn(Optional.of(existing));
       when(articleRepository.existsBySlug("new-title")).thenReturn(false);
-      when(articleRepository.save(any(Article.class)))
-          .thenAnswer(inv -> inv.getArgument(0));
+      when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
 
-      Article result =
-          articleService.update("old-title", 1L, "New Title", "New Desc", "New Body");
+      Article result = articleService.update("old-title", 1L, "New Title", "New Desc", "New Body");
 
       assertThat(result.getTitle()).isEqualTo("New Title");
       assertThat(result.getSlug()).isEqualTo("new-title");
@@ -194,8 +190,7 @@ class ArticleServiceTest {
               Instant.now());
       when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(existing));
 
-      assertThatThrownBy(
-              () -> articleService.update("test-slug", 999L, "New Title", null, null))
+      assertThatThrownBy(() -> articleService.update("test-slug", 999L, "New Title", null, null))
           .isInstanceOf(ApiException.ForbiddenException.class)
           .hasMessageContaining("you are not the author");
     }
@@ -205,8 +200,7 @@ class ArticleServiceTest {
     void notFound() {
       when(articleRepository.findBySlug("nonexistent")).thenReturn(Optional.empty());
 
-      assertThatThrownBy(
-              () -> articleService.update("nonexistent", 1L, "New Title", null, null))
+      assertThatThrownBy(() -> articleService.update("nonexistent", 1L, "New Title", null, null))
           .isInstanceOf(ApiException.NotFoundException.class)
           .hasMessageContaining("article not found");
     }
@@ -227,8 +221,7 @@ class ArticleServiceTest {
               Instant.now(),
               Instant.now());
       when(articleRepository.findBySlug("my-title")).thenReturn(Optional.of(existing));
-      when(articleRepository.save(any(Article.class)))
-          .thenAnswer(inv -> inv.getArgument(0));
+      when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
 
       Article result = articleService.update("my-title", 1L, null, "New Desc", null);
 
@@ -307,7 +300,15 @@ class ArticleServiceTest {
     void success() {
       Article article =
           new Article(
-              1L, "test-slug", "Title", "Desc", "Body", 2L, List.of(), 0, Instant.now(),
+              1L,
+              "test-slug",
+              "Title",
+              "Desc",
+              "Body",
+              2L,
+              List.of(),
+              0,
+              Instant.now(),
               Instant.now());
       when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(article));
       when(favoriteRepository.existsByUserIdAndArticleId(10L, 1L)).thenReturn(false);
@@ -325,7 +326,15 @@ class ArticleServiceTest {
     void idempotent() {
       Article article =
           new Article(
-              1L, "test-slug", "Title", "Desc", "Body", 2L, List.of(), 1, Instant.now(),
+              1L,
+              "test-slug",
+              "Title",
+              "Desc",
+              "Body",
+              2L,
+              List.of(),
+              1,
+              Instant.now(),
               Instant.now());
       when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(article));
       when(favoriteRepository.existsByUserIdAndArticleId(10L, 1L)).thenReturn(true);
@@ -357,7 +366,15 @@ class ArticleServiceTest {
     void success() {
       Article article =
           new Article(
-              1L, "test-slug", "Title", "Desc", "Body", 2L, List.of(), 1, Instant.now(),
+              1L,
+              "test-slug",
+              "Title",
+              "Desc",
+              "Body",
+              2L,
+              List.of(),
+              1,
+              Instant.now(),
               Instant.now());
       when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(article));
       when(favoriteRepository.countByArticleId(1L)).thenReturn(0);

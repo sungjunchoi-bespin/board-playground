@@ -6,6 +6,7 @@ import {
   updateArticleApi,
 } from "@/api/articles";
 import { parseApiErrors } from "@/utils/errors";
+import ErrorState from "@/components/state/error-state";
 import styles from "./editor-page.module.css";
 
 function EditorPage() {
@@ -77,13 +78,7 @@ function EditorPage() {
       <div className="container page">
         <div className="row">
           <div className="col-md-10 offset-md-1 col-xs-12">
-            {errors.length > 0 && (
-              <ul className={styles.errorMessages}>
-                {errors.map((msg) => (
-                  <li key={msg}>{msg}</li>
-                ))}
-              </ul>
-            )}
+            <ErrorState errors={errors} />
 
             <form onSubmit={handleSubmit}>
               <fieldset disabled={loading}>
@@ -133,8 +128,9 @@ function EditorPage() {
                           type="button"
                           className={styles.tagDelete}
                           onClick={() => removeTag(tag)}
+                          aria-label={`Remove ${tag} tag`}
                         >
-                          ×
+                          <span aria-hidden="true">×</span>
                         </button>
                         {tag}
                       </span>

@@ -18,16 +18,23 @@ public class UserPersistenceAdapter implements UserRepository {
   public User save(User user) {
     UserJpaEntity entity;
     if (user.getId() != null) {
-      entity = jpaRepository.findById(user.getId())
-          .orElseThrow(() -> new IllegalStateException("User not found: " + user.getId()));
+      entity =
+          jpaRepository
+              .findById(user.getId())
+              .orElseThrow(() -> new IllegalStateException("User not found: " + user.getId()));
       entity.setEmail(user.getEmail());
       entity.setUsername(user.getUsername());
       entity.setPassword(user.getPassword());
       entity.setBio(user.getBio());
       entity.setImage(user.getImage());
     } else {
-      entity = new UserJpaEntity(user.getEmail(), user.getUsername(), user.getPassword(),
-          user.getBio(), user.getImage());
+      entity =
+          new UserJpaEntity(
+              user.getEmail(),
+              user.getUsername(),
+              user.getPassword(),
+              user.getBio(),
+              user.getImage());
     }
     UserJpaEntity saved = jpaRepository.save(entity);
     return toDomain(saved);
@@ -59,7 +66,12 @@ public class UserPersistenceAdapter implements UserRepository {
   }
 
   private User toDomain(UserJpaEntity entity) {
-    return new User(entity.getId(), entity.getEmail(), entity.getUsername(), entity.getPassword(),
-        entity.getBio(), entity.getImage());
+    return new User(
+        entity.getId(),
+        entity.getEmail(),
+        entity.getUsername(),
+        entity.getPassword(),
+        entity.getBio(),
+        entity.getImage());
   }
 }

@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -27,9 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Full API Integration Test — 19 endpoints, cross-module scenarios, error cases. Issue #23.
- */
+/** Full API Integration Test — 19 endpoints, cross-module scenarios, error cases. Issue #23. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -189,7 +186,8 @@ class FullApiIntegrationTest {
               put("/api/user")
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + token)
-                  .content("""
+                  .content(
+                      """
                       {"user":{"bio":"Updated bio","image":"https://example.com/img.png"}}
                       """))
           .andExpect(status().isOk())
@@ -204,7 +202,8 @@ class FullApiIntegrationTest {
           .perform(
               put("/api/user")
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content("""
+                  .content(
+                      """
                       {"user":{"bio":"Nope"}}
                       """))
           .andExpect(status().isUnauthorized());
@@ -282,7 +281,8 @@ class FullApiIntegrationTest {
               put("/api/articles/" + slug)
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + token)
-                  .content("""
+                  .content(
+                      """
                       {"article":{"title":"Updated Title"}}
                       """))
           .andExpect(status().isOk())
@@ -302,7 +302,8 @@ class FullApiIntegrationTest {
               put("/api/articles/" + slug)
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + otherToken)
-                  .content("""
+                  .content(
+                      """
                       {"article":{"title":"Hacked"}}
                       """))
           .andExpect(status().isForbidden());
@@ -315,8 +316,7 @@ class FullApiIntegrationTest {
       String token = registerAndGetToken(username);
       String slug = FullApiIntegrationTest.this.createArticle(token, "To Delete");
       mockMvc
-          .perform(
-              delete("/api/articles/" + slug).header("Authorization", "Token " + token))
+          .perform(delete("/api/articles/" + slug).header("Authorization", "Token " + token))
           .andExpect(status().isNoContent());
       mockMvc.perform(get("/api/articles/" + slug)).andExpect(status().isNotFound());
     }
@@ -330,8 +330,7 @@ class FullApiIntegrationTest {
       String other = uniqueUsername();
       String otherToken = registerAndGetToken(other);
       mockMvc
-          .perform(
-              delete("/api/articles/" + slug).header("Authorization", "Token " + otherToken))
+          .perform(delete("/api/articles/" + slug).header("Authorization", "Token " + otherToken))
           .andExpect(status().isForbidden());
     }
 
@@ -423,7 +422,8 @@ class FullApiIntegrationTest {
               post("/api/articles/" + slug + "/comments")
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + token)
-                  .content("""
+                  .content(
+                      """
                       {"comment":{"body":"Great article!"}}
                       """))
           .andExpect(status().isOk())
@@ -441,7 +441,8 @@ class FullApiIntegrationTest {
           .perform(
               post("/api/articles/" + slug + "/comments")
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content("""
+                  .content(
+                      """
                       {"comment":{"body":"Nope"}}
                       """))
           .andExpect(status().isUnauthorized());
@@ -457,7 +458,8 @@ class FullApiIntegrationTest {
               post("/api/articles/nonexistent/comments")
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + token)
-                  .content("""
+                  .content(
+                      """
                       {"comment":{"body":"Nope"}}
                       """))
           .andExpect(status().isNotFound());
@@ -475,9 +477,11 @@ class FullApiIntegrationTest {
             post("/api/articles/" + slug + "/comments")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Token " + token)
-                .content("""
+                .content(
+                    """
                     {"comment":{"body":"%s"}}
-                    """.formatted(text)));
+                    """
+                        .formatted(text)));
       }
       mockMvc
           .perform(get("/api/articles/" + slug + "/comments"))
@@ -497,13 +501,13 @@ class FullApiIntegrationTest {
                   post("/api/articles/" + slug + "/comments")
                       .contentType(MediaType.APPLICATION_JSON)
                       .header("Authorization", "Token " + token)
-                      .content("""
+                      .content(
+                          """
                           {"comment":{"body":"To delete"}}
                           """))
               .andExpect(status().isOk())
               .andReturn();
-      int commentId =
-          JsonPath.read(result.getResponse().getContentAsString(), "$.comment.id");
+      int commentId = JsonPath.read(result.getResponse().getContentAsString(), "$.comment.id");
       mockMvc
           .perform(
               delete("/api/articles/" + slug + "/comments/" + commentId)
@@ -528,13 +532,13 @@ class FullApiIntegrationTest {
                   post("/api/articles/" + slug + "/comments")
                       .contentType(MediaType.APPLICATION_JSON)
                       .header("Authorization", "Token " + authorToken)
-                      .content("""
+                      .content(
+                          """
                           {"comment":{"body":"My comment"}}
                           """))
               .andExpect(status().isOk())
               .andReturn();
-      int commentId =
-          JsonPath.read(result.getResponse().getContentAsString(), "$.comment.id");
+      int commentId = JsonPath.read(result.getResponse().getContentAsString(), "$.comment.id");
       String other = uniqueUsername();
       String otherToken = registerAndGetToken(other);
       mockMvc
@@ -577,8 +581,7 @@ class FullApiIntegrationTest {
       String fan = uniqueUsername();
       String fanToken = registerAndGetToken(fan);
       mockMvc.perform(
-          post("/api/articles/" + slug + "/favorite")
-              .header("Authorization", "Token " + fanToken));
+          post("/api/articles/" + slug + "/favorite").header("Authorization", "Token " + fanToken));
       mockMvc
           .perform(
               post("/api/articles/" + slug + "/favorite")
@@ -596,8 +599,7 @@ class FullApiIntegrationTest {
       String fan = uniqueUsername();
       String fanToken = registerAndGetToken(fan);
       mockMvc.perform(
-          post("/api/articles/" + slug + "/favorite")
-              .header("Authorization", "Token " + fanToken));
+          post("/api/articles/" + slug + "/favorite").header("Authorization", "Token " + fanToken));
       mockMvc
           .perform(
               delete("/api/articles/" + slug + "/favorite")
@@ -614,8 +616,7 @@ class FullApiIntegrationTest {
       String token = registerAndGetToken(username);
       mockMvc
           .perform(
-              post("/api/articles/nonexistent/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/nonexistent/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isNotFound());
     }
 
@@ -657,9 +658,7 @@ class FullApiIntegrationTest {
           post("/api/profiles/" + target + "/follow")
               .header("Authorization", "Token " + followerToken));
       mockMvc
-          .perform(
-              get("/api/profiles/" + target)
-                  .header("Authorization", "Token " + followerToken))
+          .perform(get("/api/profiles/" + target).header("Authorization", "Token " + followerToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.profile.following", is(true)));
     }
@@ -682,9 +681,7 @@ class FullApiIntegrationTest {
     @Test
     @DisplayName("POST /api/profiles/{username}/follow — no token → 401")
     void followUnauthorized() throws Exception {
-      mockMvc
-          .perform(post("/api/profiles/someone/follow"))
-          .andExpect(status().isUnauthorized());
+      mockMvc.perform(post("/api/profiles/someone/follow")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -775,7 +772,8 @@ class FullApiIntegrationTest {
                   post("/api/articles/" + slug1 + "/comments")
                       .contentType(MediaType.APPLICATION_JSON)
                       .header("Authorization", "Token " + tokenB)
-                      .content("""
+                      .content(
+                          """
                           {"comment":{"body":"Awesome Java guide!"}}
                           """))
               .andExpect(status().isOk())
@@ -802,8 +800,7 @@ class FullApiIntegrationTest {
 
       // Verify favorited=true when user B gets the article
       mockMvc
-          .perform(
-              get("/api/articles/" + slug1).header("Authorization", "Token " + tokenB))
+          .perform(get("/api/articles/" + slug1).header("Authorization", "Token " + tokenB))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.article.favorited", is(true)));
 
@@ -823,23 +820,20 @@ class FullApiIntegrationTest {
       // === Step 6: User B follows user A ===
       mockMvc
           .perform(
-              post("/api/profiles/" + userA + "/follow")
-                  .header("Authorization", "Token " + tokenB))
+              post("/api/profiles/" + userA + "/follow").header("Authorization", "Token " + tokenB))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.profile.following", is(true)));
 
       // === Step 7: User B's feed contains user A's articles ===
       mockMvc
-          .perform(
-              get("/api/articles/feed").header("Authorization", "Token " + tokenB))
+          .perform(get("/api/articles/feed").header("Authorization", "Token " + tokenB))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articles", hasSize(2)))
           .andExpect(jsonPath("$.articlesCount", is(2)));
 
       // Verify following=true in article response for user B
       mockMvc
-          .perform(
-              get("/api/articles/" + slug1).header("Authorization", "Token " + tokenB))
+          .perform(get("/api/articles/" + slug1).header("Authorization", "Token " + tokenB))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.article.author.following", is(true)));
 
@@ -861,8 +855,7 @@ class FullApiIntegrationTest {
 
       // Feed should now be empty for user B
       mockMvc
-          .perform(
-              get("/api/articles/feed").header("Authorization", "Token " + tokenB))
+          .perform(get("/api/articles/feed").header("Authorization", "Token " + tokenB))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articles", empty()));
 
@@ -884,7 +877,8 @@ class FullApiIntegrationTest {
               put("/api/user")
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + tokenA)
-                  .content("""
+                  .content(
+                      """
                       {"user":{"bio":"Java expert"}}
                       """))
           .andExpect(status().isOk())
@@ -898,9 +892,7 @@ class FullApiIntegrationTest {
 
       // === Step 12: User A deletes article ===
       mockMvc
-          .perform(
-              delete("/api/articles/" + slug1)
-                  .header("Authorization", "Token " + tokenA))
+          .perform(delete("/api/articles/" + slug1).header("Authorization", "Token " + tokenA))
           .andExpect(status().isNoContent());
 
       mockMvc.perform(get("/api/articles/" + slug1)).andExpect(status().isNotFound());
@@ -976,12 +968,14 @@ class FullApiIntegrationTest {
     @DisplayName("401 — all protected endpoints reject missing token")
     void unauthorizedEndpoints() throws Exception {
       mockMvc.perform(get("/api/user")).andExpect(status().isUnauthorized());
-      mockMvc.perform(put("/api/user").contentType(MediaType.APPLICATION_JSON).content("{}"))
+      mockMvc
+          .perform(put("/api/user").contentType(MediaType.APPLICATION_JSON).content("{}"))
           .andExpect(status().isUnauthorized());
       mockMvc
           .perform(post("/api/articles").contentType(MediaType.APPLICATION_JSON).content("{}"))
           .andExpect(status().isUnauthorized());
-      mockMvc.perform(put("/api/articles/x").contentType(MediaType.APPLICATION_JSON).content("{}"))
+      mockMvc
+          .perform(put("/api/articles/x").contentType(MediaType.APPLICATION_JSON).content("{}"))
           .andExpect(status().isUnauthorized());
       mockMvc.perform(delete("/api/articles/x")).andExpect(status().isUnauthorized());
       mockMvc.perform(get("/api/articles/feed")).andExpect(status().isUnauthorized());
@@ -1010,14 +1004,14 @@ class FullApiIntegrationTest {
               post("/api/articles/no-such-slug/comments")
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + token)
-                  .content("""
+                  .content(
+                      """
                       {"comment":{"body":"test"}}
                       """))
           .andExpect(status().isNotFound());
       mockMvc
           .perform(
-              post("/api/articles/no-such-slug/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/no-such-slug/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isNotFound());
     }
 
@@ -1038,12 +1032,12 @@ class FullApiIntegrationTest {
                   post("/api/articles/" + slug + "/comments")
                       .contentType(MediaType.APPLICATION_JSON)
                       .header("Authorization", "Token " + authorToken)
-                      .content("""
+                      .content(
+                          """
                           {"comment":{"body":"Author comment"}}
                           """))
               .andReturn();
-      int commentId =
-          JsonPath.read(result.getResponse().getContentAsString(), "$.comment.id");
+      int commentId = JsonPath.read(result.getResponse().getContentAsString(), "$.comment.id");
 
       // Other user can't update article
       mockMvc
@@ -1051,16 +1045,15 @@ class FullApiIntegrationTest {
               put("/api/articles/" + slug)
                   .contentType(MediaType.APPLICATION_JSON)
                   .header("Authorization", "Token " + otherToken)
-                  .content("""
+                  .content(
+                      """
                       {"article":{"title":"Hacked"}}
                       """))
           .andExpect(status().isForbidden());
 
       // Other user can't delete article
       mockMvc
-          .perform(
-              delete("/api/articles/" + slug)
-                  .header("Authorization", "Token " + otherToken))
+          .perform(delete("/api/articles/" + slug).header("Authorization", "Token " + otherToken))
           .andExpect(status().isForbidden());
 
       // Other user can't delete author's comment
