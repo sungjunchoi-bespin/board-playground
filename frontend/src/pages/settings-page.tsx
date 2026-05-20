@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { updateUserApi } from "@/api/auth";
 import { parseApiErrors } from "@/utils/errors";
+import ErrorState from "@/components/state/error-state";
 import styles from "./settings-page.module.css";
 
 function SettingsPage() {
@@ -62,13 +63,7 @@ function SettingsPage() {
           <div className="col-md-6 offset-md-3 col-xs-12">
             <h1 className="text-xs-center">Your Settings</h1>
 
-            {errors.length > 0 && (
-              <ul className={styles.errorMessages}>
-                {errors.map((msg) => (
-                  <li key={msg}>{msg}</li>
-                ))}
-              </ul>
-            )}
+            <ErrorState errors={errors} />
 
             <form onSubmit={handleSubmit}>
               <fieldset disabled={loading}>

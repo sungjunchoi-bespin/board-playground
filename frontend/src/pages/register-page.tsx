@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { registerApi } from "@/api/auth";
 import { parseApiErrors } from "@/utils/errors";
+import ErrorState from "@/components/state/error-state";
 import styles from "./auth-page.module.css";
 
 function RegisterPage() {
@@ -40,13 +41,7 @@ function RegisterPage() {
               <Link to="/login">Have an account?</Link>
             </p>
 
-            {errors.length > 0 && (
-              <ul className={styles.errorMessages}>
-                {errors.map((msg) => (
-                  <li key={msg}>{msg}</li>
-                ))}
-              </ul>
-            )}
+            <ErrorState errors={errors} />
 
             <form onSubmit={handleSubmit}>
               <fieldset disabled={loading}>

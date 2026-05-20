@@ -8,6 +8,8 @@ import {
 } from "@/api/articles";
 import { getTagsApi } from "@/api/tags";
 import FavoriteButton from "@/components/favorite-button";
+import LoadingState from "@/components/state/loading-state";
+import EmptyState from "@/components/state/empty-state";
 import styles from "./home-page.module.css";
 
 const ARTICLES_PER_PAGE = 10;
@@ -148,11 +150,17 @@ function HomePage() {
 
             {/* Articles */}
             {loading ? (
-              <p className={styles.loadingMessage}>Loading articles...</p>
+              <LoadingState label="Loading articles..." />
             ) : articles.length === 0 ? (
-              <p className={styles.loadingMessage}>
-                No articles are here... yet.
-              </p>
+              <EmptyState
+                icon="📰"
+                title="No articles are here... yet."
+                hint={
+                  activeTab === "your"
+                    ? "Follow other users to see their articles, or write your own."
+                    : "Be the first to share an article."
+                }
+              />
             ) : (
               articles.map((article) => (
                 <ArticlePreview key={article.slug} article={article} />
@@ -263,7 +271,7 @@ function TagSidebar({
         Popular Tags
       </p>
       {tags.length === 0 ? (
-        <p>Loading tags...</p>
+        <LoadingState label="Loading tags..." size="sm" />
       ) : (
         <div className={styles.tagListSidebar}>
           {tags.map((tag) => (

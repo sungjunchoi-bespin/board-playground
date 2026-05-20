@@ -5,6 +5,8 @@ import { getProfileApi, followUserApi, unfollowUserApi } from "@/api/profiles";
 import type { Profile } from "@/api/profiles";
 import { listArticlesApi, type Article } from "@/api/articles";
 import FavoriteButton from "@/components/favorite-button";
+import LoadingState from "@/components/state/loading-state";
+import EmptyState from "@/components/state/empty-state";
 import styles from "./profile-page.module.css";
 
 const ARTICLES_PER_PAGE = 10;
@@ -85,7 +87,7 @@ function ProfilePage() {
     return (
       <div className="profile-page">
         <div className="container page">
-          <p>Loading profile...</p>
+          <LoadingState label="Loading profile..." size="lg" />
         </div>
       </div>
     );
@@ -95,7 +97,11 @@ function ProfilePage() {
     return (
       <div className="profile-page">
         <div className="container page">
-          <p>User not found.</p>
+          <EmptyState
+            icon="👤"
+            title="User not found."
+            hint="The profile may not exist or the username is misspelled."
+          />
         </div>
       </div>
     );
@@ -141,11 +147,12 @@ function ProfilePage() {
         <div className="row">
           <div className="col-md-10 offset-md-1">
             {/* Feed Tabs */}
-            <div className={styles.feedToggle}>
+            <nav className={styles.feedToggle} aria-label="Profile article views">
               <ul>
                 <li>
                   <Link
                     to={`/profile/${username}`}
+                    aria-current={activeTab === "my" ? "page" : undefined}
                     className={
                       activeTab === "my"
                         ? styles.tabItemActive
@@ -158,6 +165,9 @@ function ProfilePage() {
                 <li>
                   <Link
                     to={`/profile/${username}/favorites`}
+                    aria-current={
+                      activeTab === "favorited" ? "page" : undefined
+                    }
                     className={
                       activeTab === "favorited"
                         ? styles.tabItemActive
@@ -168,15 +178,21 @@ function ProfilePage() {
                   </Link>
                 </li>
               </ul>
-            </div>
+            </nav>
 
             {/* Articles */}
             {articlesLoading ? (
-              <p className={styles.loadingMessage}>Loading articles...</p>
+              <LoadingState label="Loading articles..." />
             ) : articles.length === 0 ? (
-              <p className={styles.loadingMessage}>
-                No articles are here... yet.
-              </p>
+              <EmptyState
+                icon="📰"
+                title="No articles are here... yet."
+                hint={
+                  activeTab === "favorited"
+                    ? `${profile.username} hasn't favorited any articles yet.`
+                    : `${profile.username} hasn't written any articles yet.`
+                }
+              />
             ) : (
               articles.map((article) => (
                 <ArticlePreview key={article.slug} article={article} />
@@ -185,23 +201,29 @@ function ProfilePage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <ul className={styles.pagination}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <li
-                      key={page}
-                      className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
-                    >
-                      <button
-                        className={styles.pageLink}
-                        onClick={() => setCurrentPage(page)}
+              <nav aria-label="Article pages">
+                <ul className={styles.pagination}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <li
+                        key={page}
+                        className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
                       >
-                        {page}
-                      </button>
-                    </li>
-                  ),
-                )}
-              </ul>
+                        <button
+                          className={styles.pageLink}
+                          onClick={() => setCurrentPage(page)}
+                          aria-current={
+                            page === currentPage ? "page" : undefined
+                          }
+                          aria-label={`Go to page ${page}`}
+                        >
+                          {page}
+                        </button>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </nav>
             )}
           </div>
         </div>

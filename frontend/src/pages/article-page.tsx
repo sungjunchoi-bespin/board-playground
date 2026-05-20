@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { getArticleApi, deleteArticleApi } from "@/api/articles";
 import type { Article } from "@/api/articles";
 import FavoriteButton from "@/components/favorite-button";
+import LoadingState from "@/components/state/loading-state";
+import EmptyState from "@/components/state/empty-state";
 import {
   listCommentsApi,
   addCommentApi,
@@ -45,7 +47,7 @@ function ArticlePage() {
     return (
       <div className="article-page">
         <div className="container page">
-          <p>Loading article...</p>
+          <LoadingState label="Loading article..." size="lg" />
         </div>
       </div>
     );
@@ -55,7 +57,11 @@ function ArticlePage() {
     return (
       <div className="article-page">
         <div className="container page">
-          <p>Article not found.</p>
+          <EmptyState
+            icon="🔍"
+            title="Article not found."
+            hint="The article may have been removed or the link is incorrect."
+          />
         </div>
       </div>
     );
