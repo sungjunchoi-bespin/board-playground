@@ -4,6 +4,12 @@ import { marked } from "marked";
 import { useAuth } from "@/hooks/use-auth";
 import { getArticleApi, deleteArticleApi } from "@/api/articles";
 import type { Article } from "@/api/articles";
+import {
+  listCommentsApi,
+  addCommentApi,
+  deleteCommentApi,
+  type Comment,
+} from "@/api/comments";
 import styles from "./article-page.module.css";
 
 function ArticlePage() {
@@ -126,6 +132,135 @@ function ArticlePage() {
           </div>
         </div>
         <hr />
+        <CommentSection slug={slug!} />
+      </div>
+    </div>
+  );
+}
+
+const DEFAULT_IMAGE = "https://api.realworld.io/images/smiley-cyrus.jpeg";
+
+function CommentSection({ slug }: { slug: string }) {
+  const { user, isAuthenticated } = useAuth();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentBody, setCommentBody] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    listCommentsApi(slug).then(setComments).catch(() => {});
+  }, [slug]);
+
+  async function handlePostComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!commentBody.trim() || posting) return;
+    setPosting(true);
+    try {
+      const newComment = await addCommentApi(slug, commentBody);
+      setComments((prev) => [newComment, ...prev]);
+      setCommentBody("");
+    } catch {
+      // ignore
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function handleDeleteComment(id: number) {
+    try {
+      await deleteCommentApi(slug, id);
+      setComments((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <div className={styles.commentSection}>
+      {isAuthenticated ? (
+        <form className={styles.commentForm} onSubmit={handlePostComment}>
+          <textarea
+            className={styles.commentTextarea}
+            placeholder="Write a comment..."
+            value={commentBody}
+            onChange={(e) => setCommentBody(e.target.value)}
+            rows={3}
+          />
+          <div className={styles.commentFormFooter}>
+            <img
+              className={styles.commentFormImage}
+              src={user?.image || DEFAULT_IMAGE}
+              alt={user?.username || ""}
+            />
+            <button
+              className={styles.postCommentBtn}
+              type="submit"
+              disabled={posting || !commentBody.trim()}
+            >
+              Post Comment
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p className={styles.signInPrompt}>
+          <Link to="/login">Sign in</Link> or{" "}
+          <Link to="/register">sign up</Link> to add comments on this article.
+        </p>
+      )}
+
+      {comments.map((comment) => (
+        <CommentCard
+          key={comment.id}
+          comment={comment}
+          currentUsername={user?.username}
+          onDelete={handleDeleteComment}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CommentCard({
+  comment,
+  currentUsername,
+  onDelete,
+}: {
+  comment: Comment;
+  currentUsername?: string;
+  onDelete: (id: number) => void;
+}) {
+  const formattedDate = new Date(comment.createdAt).toLocaleDateString(
+    "en-US",
+    { year: "numeric", month: "long", day: "numeric" },
+  );
+  const isOwn = currentUsername === comment.author.username;
+
+  return (
+    <div className={styles.commentCard}>
+      <div className={styles.commentBody}>{comment.body}</div>
+      <div className={styles.commentCardFooter}>
+        <Link to={`/profile/${comment.author.username}`}>
+          <img
+            className={styles.commentAuthorImage}
+            src={comment.author.image || DEFAULT_IMAGE}
+            alt={comment.author.username}
+          />
+        </Link>
+        <Link
+          to={`/profile/${comment.author.username}`}
+          className={styles.commentAuthorName}
+        >
+          {comment.author.username}
+        </Link>
+        <span className={styles.commentDate}>{formattedDate}</span>
+        {isOwn && (
+          <button
+            className={styles.commentDeleteBtn}
+            onClick={() => onDelete(comment.id)}
+            title="Delete comment"
+          >
+            🗑
+          </button>
+        )}
       </div>
     </div>
   );

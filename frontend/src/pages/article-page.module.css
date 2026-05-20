@@ -98,3 +98,141 @@
   border-radius: 10rem;
   font-size: 0.8rem;
 }
+
+/* Comment Section */
+.commentSection {
+  max-width: 660px;
+  margin: 0 auto 2rem;
+}
+
+.commentForm {
+  border: 1px solid #e5e5e5;
+  border-radius: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.commentTextarea {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: none;
+  border-bottom: 1px solid #e5e5e5;
+  resize: vertical;
+  min-height: 100px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.commentTextarea:focus {
+  outline: none;
+}
+
+.commentFormFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: #f5f5f5;
+}
+
+.commentFormImage {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.postCommentBtn {
+  background: #5cb85c;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.postCommentBtn:hover {
+  background: #449d44;
+}
+
+.postCommentBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Comment Card */
+.commentCard {
+  border: 1px solid #e5e5e5;
+  border-radius: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.commentBody {
+  padding: 1rem 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.commentCardFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #f5f5f5;
+  border-top: 1px solid #e5e5e5;
+}
+
+.commentAuthorImage {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.commentAuthorName {
+  color: #5cb85c;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.commentAuthorName:hover {
+  text-decoration: underline;
+}
+
+.commentDate {
+  color: #bbb;
+  font-size: 0.8rem;
+  font-weight: 300;
+}
+
+.commentDeleteBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.commentDeleteBtn:hover {
+  color: #b85c5c;
+}
+
+.signInPrompt {
+  text-align: center;
+  padding: 1rem;
+  color: #999;
+}
+
+.signInPrompt a {
+  color: #5cb85c;
+  text-decoration: none;
+}
+
+.signInPrompt a:hover {
+  text-decoration: underline;
+}
