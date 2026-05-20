@@ -1,0 +1,6 @@
+# pnpm v10+ 설정 정본 — package.json의 "pnpm" 필드는 v10부터 무시됨
+# 참고: https://pnpm.io/settings
+# 본 frontend는 단일 패키지지만 v10에서 설정을 두려면 workspace.yaml 필요.
+
+onlyBuiltDependencies:
+  - esbuild
