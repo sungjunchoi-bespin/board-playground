@@ -121,10 +121,19 @@ public class ArticleController {
   }
 
   @GetMapping("/articles/{slug}")
-  public ResponseEntity<Map<String, ArticleResponse>> getArticle(@PathVariable String slug) {
+  public ResponseEntity<Map<String, ArticleResponse>> getArticle(
+      Authentication authentication, @PathVariable String slug) {
     Article article = getArticleUseCase.getBySlug(slug);
     User author = findAuthor(article.getAuthorId());
-    return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author)));
+    Long currentUserId = getCurrentUserId(authentication);
+    boolean isFavorited =
+        currentUserId != null
+            && favoriteRepository.existsByUserIdAndArticleId(currentUserId, article.getId());
+    boolean isFollowing =
+        currentUserId != null
+            && followRepository.existsByFollowerIdAndFolloweeId(currentUserId, article.getAuthorId());
+    return ResponseEntity.ok(
+        Map.of("article", ArticleResponse.from(article, author, isFavorited, isFollowing)));
   }
 
   @PutMapping("/articles/{slug}")
