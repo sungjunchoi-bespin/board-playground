@@ -1,0 +1,257 @@
+.userBanner {
+  background: #333;
+  padding: 2rem 0 1rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.userImage {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  object-fit: cover;
+}
+
+.username {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.userBio {
+  color: #aaa;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+  font-weight: 300;
+  max-width: 450px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.2rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.editSettingsBtn {
+  composes: actionBtn;
+  color: #999;
+  border: 1px solid #999;
+  background: transparent;
+}
+
+.editSettingsBtn:hover {
+  color: #fff;
+  background: #999;
+}
+
+.followBtn {
+  composes: actionBtn;
+  color: #999;
+  border: 1px solid #999;
+  background: transparent;
+}
+
+.followBtn:hover {
+  color: #fff;
+  background: #999;
+}
+
+.unfollowBtn {
+  composes: actionBtn;
+  color: #fff;
+  border: 1px solid #5cb85c;
+  background: #5cb85c;
+}
+
+.unfollowBtn:hover {
+  background: #449d44;
+  border-color: #449d44;
+}
+
+/* Feed Tabs */
+.feedToggle {
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 1rem;
+}
+
+.feedToggle ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+}
+
+.tabItem {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.5rem 1rem;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.tabItem:hover {
+  color: #5cb85c;
+}
+
+.tabItemActive {
+  composes: tabItem;
+  color: #5cb85c;
+  border-bottom: 2px solid #5cb85c;
+}
+
+/* Article Preview (reuse from home) */
+.articlePreview {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 1.5rem 0;
+}
+
+.articleMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.authorImage {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.authorInfo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.authorName {
+  color: #5cb85c;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.authorName:hover {
+  text-decoration: underline;
+}
+
+.articleDate {
+  color: #bbb;
+  font-size: 0.8rem;
+  font-weight: 300;
+}
+
+.favCount {
+  color: #5cb85c;
+  border: 1px solid #5cb85c;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.2rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.previewLink {
+  text-decoration: none;
+  display: block;
+}
+
+.previewTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: #373a3c;
+}
+
+.previewDescription {
+  color: #999;
+  font-weight: 300;
+  font-size: 0.95rem;
+  margin: 0 0 0.75rem;
+  line-height: 1.3;
+}
+
+.readMore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.readMoreText {
+  color: #bbb;
+  font-size: 0.8rem;
+}
+
+.previewTagList {
+  list-style: none;
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.previewTag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #ddd;
+  color: #aaa;
+  border-radius: 10rem;
+}
+
+/* Pagination */
+.pagination {
+  list-style: none;
+  display: flex;
+  gap: 0;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.pageItem {
+  border: 1px solid #ddd;
+  margin-left: -1px;
+}
+
+.pageItemActive {
+  composes: pageItem;
+  background: #5cb85c;
+}
+
+.pageItemActive .pageLink {
+  color: #fff;
+}
+
+.pageLink {
+  display: block;
+  padding: 0.35rem 0.75rem;
+  color: #5cb85c;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.pageLink:hover {
+  background: #eceeef;
+}
+
+.loadingMessage {
+  padding: 1.5rem 0;
+  font-size: 1rem;
+  color: #999;
+}
