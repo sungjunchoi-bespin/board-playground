@@ -1,20 +1,15 @@
 import { Link } from "react-router-dom";
 import type { Article } from "@/api/articles";
 import FavoriteButton from "@/components/favorite-button";
+import { DEFAULT_AVATAR } from "@/constants";
+import { formatArticleDate } from "@/utils/date";
 import styles from "./article-preview.module.css";
-
-const DEFAULT_AVATAR = "https://api.realworld.io/images/smiley-cyrus.jpeg";
 
 interface ArticlePreviewProps {
   article: Article;
 }
 
 export default function ArticlePreview({ article }: ArticlePreviewProps) {
-  const formattedDate = new Date(article.createdAt).toLocaleDateString(
-    "en-US",
-    { year: "numeric", month: "long", day: "numeric" },
-  );
-
   return (
     <article className={styles.articlePreview}>
       <div className={styles.articleMeta}>
@@ -33,7 +28,7 @@ export default function ArticlePreview({ article }: ArticlePreviewProps) {
             {article.author.username}
           </Link>
           <time className={styles.articleDate} dateTime={article.createdAt}>
-            {formattedDate}
+            {formatArticleDate(article.createdAt)}
           </time>
         </div>
         <FavoriteButton

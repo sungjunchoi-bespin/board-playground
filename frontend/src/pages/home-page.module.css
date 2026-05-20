@@ -102,43 +102,6 @@
   background-color: var(--color-sidebar-tag-hover);
 }
 
-/* ─── Pagination ─── */
-.pagination {
-  display: flex;
-  list-style: none;
-  padding: 0;
-  margin: var(--spacing-lg) 0;
-  flex-wrap: wrap;
-  gap: 0;
-}
-
-.pageItem {
-  border: 1px solid var(--color-border);
-  margin-left: -1px;
-}
-
-.pageLink {
-  display: block;
-  padding: 0.4rem 0.75rem;
-  color: var(--color-primary);
-  text-decoration: none;
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-size: 0.9rem;
-  transition: var(--transition-base);
-}
-
-.pageLink:hover,
-.pageLink:focus-visible {
-  background-color: var(--color-page-hover);
-}
-
-.pageItemActive .pageLink {
-  background-color: var(--color-primary);
-  color: var(--color-bg-inverse);
-}
-
 /* ─── Responsive: mobile ─── */
 @media (max-width: 768px) {
   .bannerTitle {

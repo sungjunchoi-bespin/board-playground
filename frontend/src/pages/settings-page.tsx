@@ -43,7 +43,7 @@ function SettingsPage() {
       }
       const updated = await updateUserApi(fields);
       login(updated);
-      navigate(`/@${updated.username}`);
+      navigate(`/profile/${updated.username}`);
     } catch (err) {
       setErrors(parseApiErrors(err));
     } finally {

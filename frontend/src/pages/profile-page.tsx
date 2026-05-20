@@ -5,12 +5,13 @@ import { getProfileApi, followUserApi, unfollowUserApi } from "@/api/profiles";
 import type { Profile } from "@/api/profiles";
 import { listArticlesApi, type Article } from "@/api/articles";
 import ArticlePreview from "@/components/article-preview";
+import Pagination from "@/components/pagination";
 import LoadingState from "@/components/state/loading-state";
 import EmptyState from "@/components/state/empty-state";
+import { DEFAULT_AVATAR } from "@/constants";
 import styles from "./profile-page.module.css";
 
 const ARTICLES_PER_PAGE = 10;
-const DEFAULT_IMAGE = "https://api.realworld.io/images/smiley-cyrus.jpeg";
 
 type TabType = "my" | "favorited";
 
@@ -34,16 +35,27 @@ function ProfilePage() {
   // Load profile
   useEffect(() => {
     if (!username) return;
+    let cancelled = false;
     setLoading(true);
     getProfileApi(username)
-      .then(setProfile)
-      .catch(() => setProfile(null))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!cancelled) setProfile(res);
+      })
+      .catch(() => {
+        if (!cancelled) setProfile(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [username]);
 
   // Load articles on tab/page change
   useEffect(() => {
     if (!username) return;
+    let cancelled = false;
     setArticlesLoading(true);
     const offset = (currentPage - 1) * ARTICLES_PER_PAGE;
     const params =
@@ -53,14 +65,21 @@ function ProfilePage() {
 
     listArticlesApi(params)
       .then((res) => {
+        if (cancelled) return;
         setArticles(res.articles);
         setArticlesCount(res.articlesCount);
       })
       .catch(() => {
+        if (cancelled) return;
         setArticles([]);
         setArticlesCount(0);
       })
-      .finally(() => setArticlesLoading(false));
+      .finally(() => {
+        if (!cancelled) setArticlesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [username, activeTab, currentPage]);
 
   // Reset page on tab change
@@ -116,7 +135,7 @@ function ProfilePage() {
         <div className="container">
           <img
             className={styles.userImage}
-            src={profile.image || DEFAULT_IMAGE}
+            src={profile.image || DEFAULT_AVATAR}
             alt={profile.username}
           />
           <h4 className={styles.username}>{profile.username}</h4>
@@ -199,32 +218,11 @@ function ProfilePage() {
               ))
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <nav aria-label="Article pages">
-                <ul className={styles.pagination}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <li
-                        key={page}
-                        className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
-                      >
-                        <button
-                          className={styles.pageLink}
-                          onClick={() => setCurrentPage(page)}
-                          aria-current={
-                            page === currentPage ? "page" : undefined
-                          }
-                          aria-label={`Go to page ${page}`}
-                        >
-                          {page}
-                        </button>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              </nav>
-            )}
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>

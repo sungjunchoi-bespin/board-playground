@@ -7,6 +7,7 @@ import {
 } from "@/api/articles";
 import { getTagsApi } from "@/api/tags";
 import ArticlePreview from "@/components/article-preview";
+import Pagination from "@/components/pagination";
 import LoadingState from "@/components/state/loading-state";
 import EmptyState from "@/components/state/empty-state";
 import styles from "./home-page.module.css";
@@ -30,11 +31,21 @@ function HomePage() {
 
   // Load tags once
   useEffect(() => {
+    let cancelled = false;
     setTagsLoading(true);
     getTagsApi()
-      .then(setTags)
-      .catch(() => setTags([]))
-      .finally(() => setTagsLoading(false));
+      .then((res) => {
+        if (!cancelled) setTags(res);
+      })
+      .catch(() => {
+        if (!cancelled) setTags([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTagsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Reset to appropriate tab when auth state changes
@@ -46,6 +57,7 @@ function HomePage() {
 
   // Fetch articles when tab/page/tag changes
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     const offset = (currentPage - 1) * ARTICLES_PER_PAGE;
 
@@ -65,14 +77,21 @@ function HomePage() {
 
     request
       .then((res) => {
+        if (cancelled) return;
         setArticles(res.articles);
         setArticlesCount(res.articlesCount);
       })
       .catch(() => {
+        if (cancelled) return;
         setArticles([]);
         setArticlesCount(0);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, currentPage, selectedTag]);
 
   function handleTagClick(tag: string) {
@@ -171,32 +190,11 @@ function HomePage() {
               ))
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <nav aria-label="Article pages">
-                <ul className={styles.pagination}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <li
-                        key={page}
-                        className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
-                      >
-                        <button
-                          className={styles.pageLink}
-                          onClick={() => setCurrentPage(page)}
-                          aria-current={
-                            page === currentPage ? "page" : undefined
-                          }
-                          aria-label={`Go to page ${page}`}
-                        >
-                          {page}
-                        </button>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              </nav>
-            )}
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
 
           <div className="col-md-3">
