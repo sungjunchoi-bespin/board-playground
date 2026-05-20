@@ -95,3 +95,17 @@ export async function feedArticlesApi(
   );
   return data;
 }
+
+export async function favoriteArticleApi(slug: string): Promise<Article> {
+  const { data } = await apiClient.post<ArticleResponse>(
+    `/articles/${slug}/favorite`,
+  );
+  return data.article;
+}
+
+export async function unfavoriteArticleApi(slug: string): Promise<Article> {
+  const { data } = await apiClient.delete<ArticleResponse>(
+    `/articles/${slug}/favorite`,
+  );
+  return data.article;
+}

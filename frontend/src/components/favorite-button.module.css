@@ -1,0 +1,48 @@
+.favoriteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid #5cb85c;
+  color: #5cb85c;
+  background: transparent;
+  border-radius: 3px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  white-space: nowrap;
+}
+
+.favoriteBtn:hover {
+  color: #fff;
+  background-color: #5cb85c;
+}
+
+.favoriteBtnActive {
+  composes: favoriteBtn;
+  color: #fff;
+  background-color: #5cb85c;
+}
+
+.favoriteBtnActive:hover {
+  background-color: #449d44;
+  border-color: #449d44;
+}
+
+/* Larger variant for article page banner */
+.favoriteBtnLg {
+  composes: favoriteBtn;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.favoriteBtnLgActive {
+  composes: favoriteBtnLg;
+  color: #fff;
+  background-color: #5cb85c;
+}
+
+.favoriteBtnLgActive:hover {
+  background-color: #449d44;
+  border-color: #449d44;
+}

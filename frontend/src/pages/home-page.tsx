@@ -7,6 +7,7 @@ import {
   type Article,
 } from "@/api/articles";
 import { getTagsApi } from "@/api/tags";
+import FavoriteButton from "@/components/favorite-button";
 import styles from "./home-page.module.css";
 
 const ARTICLES_PER_PAGE = 10;
@@ -209,9 +210,11 @@ function ArticlePreview({ article }: { article: Article }) {
           </Link>
           <span className={styles.articleDate}>{formattedDate}</span>
         </div>
-        <span className={styles.favCount}>
-          ♥ {article.favoritesCount}
-        </span>
+        <FavoriteButton
+          slug={article.slug}
+          favorited={article.favorited}
+          favoritesCount={article.favoritesCount}
+        />
       </div>
       <Link to={`/article/${article.slug}`} className={styles.previewLink}>
         <h2 className={styles.previewTitle}>{article.title}</h2>

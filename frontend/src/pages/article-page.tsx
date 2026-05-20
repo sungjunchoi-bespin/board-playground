@@ -4,6 +4,7 @@ import { marked } from "marked";
 import { useAuth } from "@/hooks/use-auth";
 import { getArticleApi, deleteArticleApi } from "@/api/articles";
 import type { Article } from "@/api/articles";
+import FavoriteButton from "@/components/favorite-button";
 import {
   listCommentsApi,
   addCommentApi,
@@ -96,7 +97,7 @@ function ArticlePage() {
               </Link>
               <span className={styles.date}>{formattedDate}</span>
             </div>
-            {isAuthor && (
+            {isAuthor ? (
               <div className={styles.actions}>
                 <Link
                   to={`/editor/${article.slug}`}
@@ -111,6 +112,20 @@ function ArticlePage() {
                 >
                   <i className="ion-trash-a" /> Delete Article
                 </button>
+              </div>
+            ) : (
+              <div className={styles.actions}>
+                <FavoriteButton
+                  slug={article.slug}
+                  favorited={article.favorited}
+                  favoritesCount={article.favoritesCount}
+                  size="lg"
+                  onToggled={(fav, cnt) =>
+                    setArticle((prev) =>
+                      prev ? { ...prev, favorited: fav, favoritesCount: cnt } : prev,
+                    )
+                  }
+                />
               </div>
             )}
           </div>
