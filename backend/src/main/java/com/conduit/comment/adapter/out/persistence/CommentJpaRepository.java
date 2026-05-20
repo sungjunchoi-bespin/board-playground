@@ -1,10 +1,9 @@
 package com.conduit.comment.adapter.out.persistence;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommentJpaRepository extends JpaRepository<CommentJpaEntity, Long> {
 
-    List<CommentJpaEntity> findByArticleIdOrderByCreatedAtDesc(Long articleId);
+  List<CommentJpaEntity> findByArticleIdOrderByCreatedAtDesc(Long articleId);
 }

@@ -248,8 +248,7 @@ class ArticleControllerTest {
       String slug = createArticle(token, "To Delete", "Desc", "Body", "");
 
       mockMvc
-          .perform(
-              delete("/api/articles/" + slug).header("Authorization", "Token " + token))
+          .perform(delete("/api/articles/" + slug).header("Authorization", "Token " + token))
           .andExpect(status().isNoContent());
 
       // Verify article is deleted
@@ -264,8 +263,7 @@ class ArticleControllerTest {
       String slug = createArticle(authorToken, "Author Article", "Desc", "Body", "");
 
       mockMvc
-          .perform(
-              delete("/api/articles/" + slug).header("Authorization", "Token " + otherToken))
+          .perform(delete("/api/articles/" + slug).header("Authorization", "Token " + otherToken))
           .andExpect(status().isForbidden());
     }
 
@@ -281,8 +279,7 @@ class ArticleControllerTest {
       String token = registerAndGetToken("jacob", "jake@jake.com", "jakejake1");
 
       mockMvc
-          .perform(
-              delete("/api/articles/nonexistent").header("Authorization", "Token " + token))
+          .perform(delete("/api/articles/nonexistent").header("Authorization", "Token " + token))
           .andExpect(status().isNotFound());
     }
   }
@@ -299,8 +296,7 @@ class ArticleControllerTest {
 
       mockMvc
           .perform(
-              post("/api/articles/" + slug + "/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/" + slug + "/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.article.slug").value(slug))
           .andExpect(jsonPath("$.article.favorited").value(true))
@@ -315,15 +311,13 @@ class ArticleControllerTest {
 
       mockMvc
           .perform(
-              post("/api/articles/" + slug + "/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/" + slug + "/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.article.favoritesCount").value(1));
 
       mockMvc
           .perform(
-              post("/api/articles/" + slug + "/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/" + slug + "/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.article.favoritesCount").value(1));
     }
@@ -343,8 +337,7 @@ class ArticleControllerTest {
 
       mockMvc
           .perform(
-              post("/api/articles/nonexistent/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/nonexistent/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isNotFound());
     }
   }
@@ -362,8 +355,7 @@ class ArticleControllerTest {
       // Favorite first
       mockMvc
           .perform(
-              post("/api/articles/" + slug + "/favorite")
-                  .header("Authorization", "Token " + token))
+              post("/api/articles/" + slug + "/favorite").header("Authorization", "Token " + token))
           .andExpect(status().isOk());
 
       // Unfavorite

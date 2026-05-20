@@ -89,8 +89,7 @@ public class ArticlePersistenceAdapter implements ArticleRepository {
     if (favoritedByUsername != null && !favoritedByUsername.isBlank()) {
       joins.add(
           "JOIN com.conduit.user.adapter.out.persistence.UserJpaEntity fu ON fu.username = :favoritedByUsername");
-      joins.add(
-          "JOIN FavoriteJpaEntity fav ON fav.articleId = a.id AND fav.userId = fu.id");
+      joins.add("JOIN FavoriteJpaEntity fav ON fav.articleId = a.id AND fav.userId = fu.id");
     }
 
     for (String join : joins) {
@@ -140,8 +139,7 @@ public class ArticlePersistenceAdapter implements ArticleRepository {
     if (favoritedByUsername != null && !favoritedByUsername.isBlank()) {
       joins.add(
           "JOIN com.conduit.user.adapter.out.persistence.UserJpaEntity fu ON fu.username = :favoritedByUsername");
-      joins.add(
-          "JOIN FavoriteJpaEntity fav ON fav.articleId = a.id AND fav.userId = fu.id");
+      joins.add("JOIN FavoriteJpaEntity fav ON fav.articleId = a.id AND fav.userId = fu.id");
     }
 
     for (String join : joins) {

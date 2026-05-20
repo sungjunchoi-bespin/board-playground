@@ -1,7 +1,5 @@
 package com.conduit.user.adapter.in.web;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -35,9 +33,11 @@ class AuthFlowIntegrationTest {
 
   private String registerAndGetToken(String username, String email, String password)
       throws Exception {
-    String body = """
+    String body =
+        """
         {"user":{"username":"%s","email":"%s","password":"%s"}}
-        """.formatted(username, email, password);
+        """
+            .formatted(username, email, password);
 
     MvcResult result =
         mockMvc
@@ -49,14 +49,15 @@ class AuthFlowIntegrationTest {
   }
 
   private String loginAndGetToken(String email, String password) throws Exception {
-    String body = """
+    String body =
+        """
         {"user":{"email":"%s","password":"%s"}}
-        """.formatted(email, password);
+        """
+            .formatted(email, password);
 
     MvcResult result =
         mockMvc
-            .perform(
-                post("/api/users/login").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(post("/api/users/login").contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -240,7 +241,8 @@ class AuthFlowIntegrationTest {
           .perform(
               put("/api/user")
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content("""
+                  .content(
+                      """
               {"user":{"bio":"hacked"}}
               """))
           .andExpect(status().isUnauthorized());
@@ -323,7 +325,8 @@ class AuthFlowIntegrationTest {
               put("/api/user")
                   .header("Authorization", "Token " + token)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content("""
+                  .content(
+                      """
               {"user":{"email":"new@test.com"}}
               """))
           .andExpect(status().isOk())
@@ -359,7 +362,8 @@ class AuthFlowIntegrationTest {
               put("/api/user")
                   .header("Authorization", "Token " + token)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content("""
+                  .content(
+                      """
               {"user":{"password":"newpassword1"}}
               """))
           .andExpect(status().isOk());

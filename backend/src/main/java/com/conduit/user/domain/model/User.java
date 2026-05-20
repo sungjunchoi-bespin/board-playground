@@ -22,8 +22,8 @@ public class User {
     return new User(null, email, username, hashedPassword, null, null);
   }
 
-  public void update(String email, String username, String hashedPassword, String bio,
-      String image) {
+  public void update(
+      String email, String username, String hashedPassword, String bio, String image) {
     if (email != null) this.email = email;
     if (username != null) this.username = username;
     if (hashedPassword != null) this.password = hashedPassword;
@@ -31,10 +31,27 @@ public class User {
     if (image != null) this.image = image;
   }
 
-  public Long getId() { return id; }
-  public String getEmail() { return email; }
-  public String getUsername() { return username; }
-  public String getPassword() { return password; }
-  public String getBio() { return bio; }
-  public String getImage() { return image; }
+  public Long getId() {
+    return id;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public String getBio() {
+    return bio;
+  }
+
+  public String getImage() {
+    return image;
+  }
 }

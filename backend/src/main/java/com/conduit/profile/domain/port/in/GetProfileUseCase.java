@@ -4,5 +4,5 @@ import com.conduit.profile.domain.model.Profile;
 
 public interface GetProfileUseCase {
 
-    Profile getProfile(String username, Long currentUserId);
+  Profile getProfile(String username, Long currentUserId);
 }
