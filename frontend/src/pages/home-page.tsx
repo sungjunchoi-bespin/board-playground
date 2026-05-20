@@ -100,11 +100,13 @@ function HomePage() {
         <div className="row">
           <div className="col-md-9">
             {/* Feed Tabs */}
-            <div className={styles.feedToggle}>
-              <ul>
+            <nav className={styles.feedToggle} aria-label="Article feeds">
+              <ul role="tablist">
                 {isAuthenticated && (
-                  <li>
+                  <li role="presentation">
                     <button
+                      role="tab"
+                      aria-selected={activeTab === "your"}
                       className={
                         activeTab === "your"
                           ? styles.tabItemActive
@@ -116,8 +118,10 @@ function HomePage() {
                     </button>
                   </li>
                 )}
-                <li>
+                <li role="presentation">
                   <button
+                    role="tab"
+                    aria-selected={activeTab === "global"}
                     className={
                       activeTab === "global"
                         ? styles.tabItemActive
@@ -129,14 +133,18 @@ function HomePage() {
                   </button>
                 </li>
                 {activeTab === "tag" && selectedTag && (
-                  <li>
-                    <button className={styles.tabItemActive}>
+                  <li role="presentation">
+                    <button
+                      role="tab"
+                      aria-selected="true"
+                      className={styles.tabItemActive}
+                    >
                       # {selectedTag}
                     </button>
                   </li>
                 )}
               </ul>
-            </div>
+            </nav>
 
             {/* Articles */}
             {loading ? (
@@ -153,23 +161,29 @@ function HomePage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <ul className={styles.pagination}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <li
-                      key={page}
-                      className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
-                    >
-                      <button
-                        className={styles.pageLink}
-                        onClick={() => setCurrentPage(page)}
+              <nav aria-label="Article pages">
+                <ul className={styles.pagination}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <li
+                        key={page}
+                        className={`${styles.pageItem} ${page === currentPage ? styles.pageItemActive : ""}`}
                       >
-                        {page}
-                      </button>
-                    </li>
-                  ),
-                )}
-              </ul>
+                        <button
+                          className={styles.pageLink}
+                          onClick={() => setCurrentPage(page)}
+                          aria-current={
+                            page === currentPage ? "page" : undefined
+                          }
+                          aria-label={`Go to page ${page}`}
+                        >
+                          {page}
+                        </button>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </nav>
             )}
           </div>
 
@@ -244,8 +258,10 @@ function TagSidebar({
   onTagClick: (tag: string) => void;
 }) {
   return (
-    <div className={styles.sidebar}>
-      <p className={styles.sidebarTitle}>Popular Tags</p>
+    <aside className={styles.sidebar} aria-labelledby="popular-tags-title">
+      <p id="popular-tags-title" className={styles.sidebarTitle}>
+        Popular Tags
+      </p>
       {tags.length === 0 ? (
         <p>Loading tags...</p>
       ) : (
@@ -255,13 +271,14 @@ function TagSidebar({
               key={tag}
               className={styles.sidebarTag}
               onClick={() => onTagClick(tag)}
+              aria-label={`Filter by ${tag} tag`}
             >
               {tag}
             </button>
           ))}
         </div>
       )}
-    </div>
+    </aside>
   );
 }
 

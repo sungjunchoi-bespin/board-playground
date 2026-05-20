@@ -5,7 +5,7 @@ function Header() {
   const { user, isAuthenticated } = useAuth();
 
   return (
-    <nav className="navbar navbar-light">
+    <nav className="navbar navbar-light" aria-label="Primary">
       <div className="container">
         <Link className="navbar-brand" to="/">
           conduit
@@ -20,12 +20,12 @@ function Header() {
             <>
               <li className="nav-item">
                 <NavLink className="nav-link" to="/editor">
-                  <i className="ion-compose" /> New Article
+                  <i className="ion-compose" aria-hidden="true" /> New Article
                 </NavLink>
               </li>
               <li className="nav-item">
                 <NavLink className="nav-link" to="/settings">
-                  <i className="ion-gear-a" /> Settings
+                  <i className="ion-gear-a" aria-hidden="true" /> Settings
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -37,7 +37,7 @@ function Header() {
                     <img
                       src={user!.image}
                       className="user-pic"
-                      alt={user!.username}
+                      alt=""
                     />
                   )}
                   {user!.username}

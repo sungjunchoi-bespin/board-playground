@@ -103,14 +103,16 @@ function ArticlePage() {
                   to={`/editor/${article.slug}`}
                   className={`btn btn-sm btn-outline-secondary ${styles.editBtn}`}
                 >
-                  <i className="ion-edit" /> Edit Article
+                  <i className="ion-edit" aria-hidden="true" /> Edit Article
                 </Link>
                 <button
                   className={`btn btn-sm btn-outline-danger ${styles.deleteBtn}`}
                   onClick={handleDelete}
                   disabled={deleting}
+                  aria-label="Delete article"
                 >
-                  <i className="ion-trash-a" /> Delete Article
+                  <i className="ion-trash-a" aria-hidden="true" /> Delete
+                  Article
                 </button>
               </div>
             ) : (
@@ -272,8 +274,9 @@ function CommentCard({
             className={styles.commentDeleteBtn}
             onClick={() => onDelete(comment.id)}
             title="Delete comment"
+            aria-label="Delete comment"
           >
-            🗑
+            <span aria-hidden="true">🗑</span>
           </button>
         )}
       </div>

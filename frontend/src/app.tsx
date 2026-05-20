@@ -16,17 +16,22 @@ function App() {
   return (
     <Provider value={value}>
       <Header />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/editor" element={<EditorPage />} />
-        <Route path="/editor/:slug" element={<EditorPage />} />
-        <Route path="/article/:slug" element={<ArticlePage />} />
-        <Route path="/profile/:username" element={<ProfilePage />} />
-        <Route path="/profile/:username/favorites" element={<ProfilePage />} />
-      </Routes>
+      <main id="main-content" role="main">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/editor" element={<EditorPage />} />
+          <Route path="/editor/:slug" element={<EditorPage />} />
+          <Route path="/article/:slug" element={<ArticlePage />} />
+          <Route path="/profile/:username" element={<ProfilePage />} />
+          <Route
+            path="/profile/:username/favorites"
+            element={<ProfilePage />}
+          />
+        </Routes>
+      </main>
       <Footer />
     </Provider>
   );
