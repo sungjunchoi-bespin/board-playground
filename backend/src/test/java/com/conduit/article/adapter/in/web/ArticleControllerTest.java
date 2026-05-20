@@ -286,4 +286,147 @@ class ArticleControllerTest {
           .andExpect(status().isNotFound());
     }
   }
+
+  @Nested
+  @DisplayName("POST /api/articles/{slug}/favorite")
+  class FavoriteArticle {
+
+    @Test
+    @DisplayName("should favorite article and return updated count")
+    void success() throws Exception {
+      String token = registerAndGetToken("jacob", "jake@jake.com", "jakejake1");
+      String slug = createArticle(token, "Fav Article", "Desc", "Body", "");
+
+      mockMvc
+          .perform(
+              post("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.slug").value(slug))
+          .andExpect(jsonPath("$.article.favorited").value(true))
+          .andExpect(jsonPath("$.article.favoritesCount").value(1));
+    }
+
+    @Test
+    @DisplayName("should be idempotent - favoriting twice returns same count")
+    void idempotent() throws Exception {
+      String token = registerAndGetToken("jacob", "jake@jake.com", "jakejake1");
+      String slug = createArticle(token, "Fav Article", "Desc", "Body", "");
+
+      mockMvc
+          .perform(
+              post("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.favoritesCount").value(1));
+
+      mockMvc
+          .perform(
+              post("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.favoritesCount").value(1));
+    }
+
+    @Test
+    @DisplayName("should return 401 without authentication")
+    void unauthorized() throws Exception {
+      mockMvc
+          .perform(post("/api/articles/some-slug/favorite"))
+          .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("should return 404 for nonexistent article")
+    void notFound() throws Exception {
+      String token = registerAndGetToken("jacob", "jake@jake.com", "jakejake1");
+
+      mockMvc
+          .perform(
+              post("/api/articles/nonexistent/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isNotFound());
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /api/articles/{slug}/favorite")
+  class UnfavoriteArticle {
+
+    @Test
+    @DisplayName("should unfavorite article and return updated count")
+    void success() throws Exception {
+      String token = registerAndGetToken("jacob", "jake@jake.com", "jakejake1");
+      String slug = createArticle(token, "Unfav Article", "Desc", "Body", "");
+
+      // Favorite first
+      mockMvc
+          .perform(
+              post("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isOk());
+
+      // Unfavorite
+      mockMvc
+          .perform(
+              delete("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.slug").value(slug))
+          .andExpect(jsonPath("$.article.favorited").value(false))
+          .andExpect(jsonPath("$.article.favoritesCount").value(0));
+    }
+
+    @Test
+    @DisplayName("should be safe to unfavorite when not favorited")
+    void idempotent() throws Exception {
+      String token = registerAndGetToken("jacob", "jake@jake.com", "jakejake1");
+      String slug = createArticle(token, "Never Fav Article", "Desc", "Body", "");
+
+      mockMvc
+          .perform(
+              delete("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.favoritesCount").value(0));
+    }
+
+    @Test
+    @DisplayName("should return 401 without authentication")
+    void unauthorized() throws Exception {
+      mockMvc
+          .perform(delete("/api/articles/some-slug/favorite"))
+          .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("should track multiple users favoriting same article")
+    void multipleUsers() throws Exception {
+      String token1 = registerAndGetToken("user1", "user1@test.com", "password123");
+      String token2 = registerAndGetToken("user2", "user2@test.com", "password123");
+      String slug = createArticle(token1, "Popular Article", "Desc", "Body", "");
+
+      mockMvc
+          .perform(
+              post("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token1))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.favoritesCount").value(1));
+
+      mockMvc
+          .perform(
+              post("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token2))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.favoritesCount").value(2));
+
+      // User 1 unfavorites
+      mockMvc
+          .perform(
+              delete("/api/articles/" + slug + "/favorite")
+                  .header("Authorization", "Token " + token1))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.article.favoritesCount").value(1));
+    }
+  }
 }

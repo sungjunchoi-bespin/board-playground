@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.conduit.article.domain.model.Article;
 import com.conduit.article.domain.port.out.ArticleRepository;
+import com.conduit.article.domain.port.out.FavoriteRepository;
 import com.conduit.article.domain.port.out.FollowRepository;
 import com.conduit.shared.exception.ApiException;
 import java.time.Instant;
@@ -28,11 +29,12 @@ class ArticleServiceTest {
 
   @Mock private ArticleRepository articleRepository;
   @Mock private FollowRepository followRepository;
+  @Mock private FavoriteRepository favoriteRepository;
   private ArticleService articleService;
 
   @BeforeEach
   void setUp() {
-    articleService = new ArticleService(articleRepository, followRepository);
+    articleService = new ArticleService(articleRepository, followRepository, favoriteRepository);
   }
 
   @Nested
@@ -293,6 +295,87 @@ class ArticleServiceTest {
       assertThatThrownBy(() -> articleService.delete("nonexistent", 1L))
           .isInstanceOf(ApiException.NotFoundException.class)
           .hasMessageContaining("article not found");
+    }
+  }
+
+  @Nested
+  @DisplayName("favorite")
+  class Favorite {
+
+    @Test
+    @DisplayName("should favorite article and update count")
+    void success() {
+      Article article =
+          new Article(
+              1L, "test-slug", "Title", "Desc", "Body", 2L, List.of(), 0, Instant.now(),
+              Instant.now());
+      when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(article));
+      when(favoriteRepository.existsByUserIdAndArticleId(10L, 1L)).thenReturn(false);
+      when(favoriteRepository.countByArticleId(1L)).thenReturn(1);
+      when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      Article result = articleService.favorite("test-slug", 10L);
+
+      verify(favoriteRepository).save(10L, 1L);
+      assertThat(result.getFavoritesCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("should be idempotent - not duplicate favorite")
+    void idempotent() {
+      Article article =
+          new Article(
+              1L, "test-slug", "Title", "Desc", "Body", 2L, List.of(), 1, Instant.now(),
+              Instant.now());
+      when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(article));
+      when(favoriteRepository.existsByUserIdAndArticleId(10L, 1L)).thenReturn(true);
+      when(favoriteRepository.countByArticleId(1L)).thenReturn(1);
+      when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      Article result = articleService.favorite("test-slug", 10L);
+
+      verify(favoriteRepository, never()).save(any(), any());
+      assertThat(result.getFavoritesCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("should throw NotFoundException when article not found")
+    void notFound() {
+      when(articleRepository.findBySlug("nonexistent")).thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> articleService.favorite("nonexistent", 10L))
+          .isInstanceOf(ApiException.NotFoundException.class);
+    }
+  }
+
+  @Nested
+  @DisplayName("unfavorite")
+  class Unfavorite {
+
+    @Test
+    @DisplayName("should unfavorite article and update count")
+    void success() {
+      Article article =
+          new Article(
+              1L, "test-slug", "Title", "Desc", "Body", 2L, List.of(), 1, Instant.now(),
+              Instant.now());
+      when(articleRepository.findBySlug("test-slug")).thenReturn(Optional.of(article));
+      when(favoriteRepository.countByArticleId(1L)).thenReturn(0);
+      when(articleRepository.save(any(Article.class))).thenAnswer(inv -> inv.getArgument(0));
+
+      Article result = articleService.unfavorite("test-slug", 10L);
+
+      verify(favoriteRepository).delete(10L, 1L);
+      assertThat(result.getFavoritesCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("should throw NotFoundException when article not found")
+    void notFound() {
+      when(articleRepository.findBySlug("nonexistent")).thenReturn(Optional.empty());
+
+      assertThatThrownBy(() -> articleService.unfavorite("nonexistent", 10L))
+          .isInstanceOf(ApiException.NotFoundException.class);
     }
   }
 }

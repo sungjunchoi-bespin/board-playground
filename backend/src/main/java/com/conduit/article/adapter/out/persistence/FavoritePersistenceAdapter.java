@@ -28,4 +28,22 @@ public class FavoritePersistenceAdapter implements FavoriteRepository {
     return new HashSet<>(
         favoriteJpaRepository.findArticleIdsByUserIdAndArticleIdIn(userId, articleIds));
   }
+
+  @Override
+  public void save(Long userId, Long articleId) {
+    favoriteJpaRepository.save(new FavoriteJpaEntity(userId, articleId));
+  }
+
+  @Override
+  public void delete(Long userId, Long articleId) {
+    FavoriteId id = new FavoriteId(userId, articleId);
+    if (favoriteJpaRepository.existsById(id)) {
+      favoriteJpaRepository.deleteById(id);
+    }
+  }
+
+  @Override
+  public int countByArticleId(Long articleId) {
+    return favoriteJpaRepository.countByArticleId(articleId);
+  }
 }
