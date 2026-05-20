@@ -58,116 +58,6 @@
   border-bottom-color: var(--color-primary);
 }
 
-/* ─── Article Preview ─── */
-.articlePreview {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 1.5rem 0;
-}
-
-.articleMeta {
-  display: flex;
-  align-items: center;
-  margin-bottom: var(--spacing-md);
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.authorImage {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-right: 0.4rem;
-}
-
-.authorInfo {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-  margin-right: auto;
-}
-
-.authorName {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 600;
-  transition: var(--transition-base);
-}
-
-.authorName:hover {
-  color: var(--color-primary-darker);
-  text-decoration: underline;
-}
-
-.articleDate {
-  color: var(--color-text-faint);
-  font-size: 0.8rem;
-  margin-top: 0.2rem;
-}
-
-.favCount {
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 0.8rem;
-  background: transparent;
-  cursor: default;
-}
-
-.previewLink {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  transition: var(--transition-base);
-}
-
-.previewLink:hover h2 {
-  color: var(--color-primary);
-}
-
-.previewTitle {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-}
-
-.previewDescription {
-  font-size: var(--font-size-base);
-  color: var(--color-text-muted);
-  font-weight: 300;
-  margin-bottom: var(--spacing-md);
-}
-
-.readMore {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.readMoreText {
-  color: var(--color-text-faint);
-  font-size: 0.85rem;
-}
-
-.previewTagList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.previewTag {
-  font-size: var(--font-size-xs);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-light);
-  padding: 0.1rem var(--spacing-sm);
-  border-radius: var(--radius-pill);
-}
-
 /* ─── Sidebar ─── */
 .sidebar {
   background-color: var(--color-bg-gray);
@@ -243,12 +133,6 @@
   color: var(--color-bg-inverse);
 }
 
-/* ─── Loading ─── */
-.loadingMessage {
-  padding: 1.5rem 0;
-  color: var(--color-text-muted);
-}
-
 /* ─── Responsive: mobile ─── */
 @media (max-width: 768px) {
   .bannerTitle {
@@ -271,9 +155,5 @@
 @media (max-width: 480px) {
   .bannerTitle {
     font-size: 1.5rem;
-  }
-
-  .previewTitle {
-    font-size: 1.25rem;
   }
 }

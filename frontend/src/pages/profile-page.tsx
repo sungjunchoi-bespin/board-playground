@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getProfileApi, followUserApi, unfollowUserApi } from "@/api/profiles";
 import type { Profile } from "@/api/profiles";
 import { listArticlesApi, type Article } from "@/api/articles";
-import FavoriteButton from "@/components/favorite-button";
+import ArticlePreview from "@/components/article-preview";
 import LoadingState from "@/components/state/loading-state";
 import EmptyState from "@/components/state/empty-state";
 import styles from "./profile-page.module.css";
@@ -228,57 +228,6 @@ function ProfilePage() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ArticlePreview({ article }: { article: Article }) {
-  const formattedDate = new Date(article.createdAt).toLocaleDateString(
-    "en-US",
-    { year: "numeric", month: "long", day: "numeric" },
-  );
-
-  return (
-    <div className={styles.articlePreview}>
-      <div className={styles.articleMeta}>
-        <Link to={`/profile/${article.author.username}`}>
-          <img
-            className={styles.authorImage}
-            src={article.author.image || DEFAULT_IMAGE}
-            alt={article.author.username}
-          />
-        </Link>
-        <div className={styles.authorInfo}>
-          <Link
-            to={`/profile/${article.author.username}`}
-            className={styles.authorName}
-          >
-            {article.author.username}
-          </Link>
-          <span className={styles.articleDate}>{formattedDate}</span>
-        </div>
-        <FavoriteButton
-          slug={article.slug}
-          favorited={article.favorited}
-          favoritesCount={article.favoritesCount}
-        />
-      </div>
-      <Link to={`/article/${article.slug}`} className={styles.previewLink}>
-        <h2 className={styles.previewTitle}>{article.title}</h2>
-        <p className={styles.previewDescription}>{article.description}</p>
-        <div className={styles.readMore}>
-          <span className={styles.readMoreText}>Read more...</span>
-          {article.tagList.length > 0 && (
-            <ul className={styles.previewTagList}>
-              {article.tagList.map((tag) => (
-                <li key={tag} className={styles.previewTag}>
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Link>
     </div>
   );
 }
