@@ -14,6 +14,11 @@ import com.conduit.article.domain.port.out.FollowRepository;
 import com.conduit.shared.exception.ApiException;
 import com.conduit.user.domain.model.User;
 import com.conduit.user.domain.port.out.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Articles", description = "Article CRUD and favorites")
 @RestController
 @RequestMapping("/api")
 public class ArticleController {
@@ -74,10 +80,16 @@ public class ArticleController {
     this.followRepository = followRepository;
   }
 
+  @Operation(
+      summary = "Create an article",
+      description = "Create a new article. Auth required.",
+      security = @SecurityRequirement(name = "Token"))
+  @ApiResponse(responseCode = "200", description = "Article created")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "422", description = "Validation error")
   @PostMapping("/articles")
   public ResponseEntity<Map<String, ArticleResponse>> createArticle(
-      Authentication authentication,
-      @Valid @RequestBody Map<String, CreateArticleRequest> body) {
+      Authentication authentication, @Valid @RequestBody Map<String, CreateArticleRequest> body) {
     Long userId = (Long) authentication.getPrincipal();
     CreateArticleRequest req = body.get("article");
     Article article =
@@ -87,14 +99,25 @@ public class ArticleController {
     return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author)));
   }
 
+  @Operation(
+      summary = "List articles",
+      description =
+          "List articles filtered by tag, author, or favorited user. Supports pagination.")
+  @ApiResponse(responseCode = "200", description = "Articles list with count")
   @GetMapping("/articles")
   public ResponseEntity<Map<String, Object>> listArticles(
       Authentication authentication,
-      @RequestParam(required = false) String tag,
-      @RequestParam(required = false) String author,
-      @RequestParam(required = false) String favorited,
-      @RequestParam(defaultValue = "20") int limit,
-      @RequestParam(defaultValue = "0") int offset) {
+      @Parameter(description = "Filter by tag") @RequestParam(required = false) String tag,
+      @Parameter(description = "Filter by author username") @RequestParam(required = false)
+          String author,
+      @Parameter(description = "Filter by user who favorited") @RequestParam(required = false)
+          String favorited,
+      @Parameter(description = "Limit number of articles (default 20)")
+          @RequestParam(defaultValue = "20")
+          int limit,
+      @Parameter(description = "Offset/skip number of articles (default 0)")
+          @RequestParam(defaultValue = "0")
+          int offset) {
     List<Article> articles =
         listArticlesUseCase.listArticles(tag, author, favorited, limit, offset);
     long articlesCount = listArticlesUseCase.countArticles(tag, author, favorited);
@@ -105,11 +128,17 @@ public class ArticleController {
     return ResponseEntity.ok(Map.of("articles", responses, "articlesCount", articlesCount));
   }
 
+  @Operation(
+      summary = "Feed articles",
+      description = "Get articles from users you follow. Auth required.",
+      security = @SecurityRequirement(name = "Token"))
+  @ApiResponse(responseCode = "200", description = "Feed articles with count")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @GetMapping("/articles/feed")
   public ResponseEntity<Map<String, Object>> feedArticles(
       Authentication authentication,
-      @RequestParam(defaultValue = "20") int limit,
-      @RequestParam(defaultValue = "0") int offset) {
+      @Parameter(description = "Limit (default 20)") @RequestParam(defaultValue = "20") int limit,
+      @Parameter(description = "Offset (default 0)") @RequestParam(defaultValue = "0") int offset) {
     Long userId = (Long) authentication.getPrincipal();
 
     List<Article> articles = feedArticlesUseCase.feedArticles(userId, limit, offset);
@@ -120,9 +149,15 @@ public class ArticleController {
     return ResponseEntity.ok(Map.of("articles", responses, "articlesCount", articlesCount));
   }
 
+  @Operation(
+      summary = "Get an article",
+      description = "Get a single article by slug. No auth required.")
+  @ApiResponse(responseCode = "200", description = "Article found")
+  @ApiResponse(responseCode = "404", description = "Article not found")
   @GetMapping("/articles/{slug}")
   public ResponseEntity<Map<String, ArticleResponse>> getArticle(
-      Authentication authentication, @PathVariable String slug) {
+      Authentication authentication,
+      @Parameter(description = "Slug of the article") @PathVariable String slug) {
     Article article = getArticleUseCase.getBySlug(slug);
     User author = findAuthor(article.getAuthorId());
     Long currentUserId = getCurrentUserId(authentication);
@@ -131,15 +166,24 @@ public class ArticleController {
             && favoriteRepository.existsByUserIdAndArticleId(currentUserId, article.getId());
     boolean isFollowing =
         currentUserId != null
-            && followRepository.existsByFollowerIdAndFolloweeId(currentUserId, article.getAuthorId());
+            && followRepository.existsByFollowerIdAndFolloweeId(
+                currentUserId, article.getAuthorId());
     return ResponseEntity.ok(
         Map.of("article", ArticleResponse.from(article, author, isFavorited, isFollowing)));
   }
 
+  @Operation(
+      summary = "Update an article",
+      description = "Update an article. Auth required. Only the author can update.",
+      security = @SecurityRequirement(name = "Token"))
+  @ApiResponse(responseCode = "200", description = "Article updated")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "403", description = "Forbidden — not the author")
+  @ApiResponse(responseCode = "404", description = "Article not found")
   @PutMapping("/articles/{slug}")
   public ResponseEntity<Map<String, ArticleResponse>> updateArticle(
       Authentication authentication,
-      @PathVariable String slug,
+      @Parameter(description = "Slug of the article") @PathVariable String slug,
       @RequestBody Map<String, UpdateArticleRequest> body) {
     Long userId = (Long) authentication.getPrincipal();
     UpdateArticleRequest req = body.get("article");
@@ -149,32 +193,61 @@ public class ArticleController {
     return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author)));
   }
 
+  @Operation(
+      summary = "Delete an article",
+      description = "Delete an article. Auth required. Only the author can delete.",
+      security = @SecurityRequirement(name = "Token"))
+  @ApiResponse(responseCode = "204", description = "Article deleted")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "403", description = "Forbidden — not the author")
+  @ApiResponse(responseCode = "404", description = "Article not found")
   @DeleteMapping("/articles/{slug}")
   public ResponseEntity<Void> deleteArticle(
-      Authentication authentication, @PathVariable String slug) {
+      Authentication authentication,
+      @Parameter(description = "Slug of the article") @PathVariable String slug) {
     Long userId = (Long) authentication.getPrincipal();
     deleteArticleUseCase.delete(slug, userId);
     return ResponseEntity.noContent().build();
   }
 
+  @Operation(
+      summary = "Favorite an article",
+      description = "Favorite an article. Auth required.",
+      security = @SecurityRequirement(name = "Token"))
+  @ApiResponse(responseCode = "200", description = "Article favorited")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "404", description = "Article not found")
   @PostMapping("/articles/{slug}/favorite")
   public ResponseEntity<Map<String, ArticleResponse>> favoriteArticle(
-      Authentication authentication, @PathVariable String slug) {
+      Authentication authentication,
+      @Parameter(description = "Slug of the article") @PathVariable String slug) {
     Long userId = (Long) authentication.getPrincipal();
     Article article = favoriteArticleUseCase.favorite(slug, userId);
     User author = findAuthor(article.getAuthorId());
-    boolean isFollowing = followRepository.existsByFollowerIdAndFolloweeId(userId, article.getAuthorId());
-    return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author, true, isFollowing)));
+    boolean isFollowing =
+        followRepository.existsByFollowerIdAndFolloweeId(userId, article.getAuthorId());
+    return ResponseEntity.ok(
+        Map.of("article", ArticleResponse.from(article, author, true, isFollowing)));
   }
 
+  @Operation(
+      summary = "Unfavorite an article",
+      description = "Unfavorite an article. Auth required.",
+      security = @SecurityRequirement(name = "Token"))
+  @ApiResponse(responseCode = "200", description = "Article unfavorited")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "404", description = "Article not found")
   @DeleteMapping("/articles/{slug}/favorite")
   public ResponseEntity<Map<String, ArticleResponse>> unfavoriteArticle(
-      Authentication authentication, @PathVariable String slug) {
+      Authentication authentication,
+      @Parameter(description = "Slug of the article") @PathVariable String slug) {
     Long userId = (Long) authentication.getPrincipal();
     Article article = unfavoriteArticleUseCase.unfavorite(slug, userId);
     User author = findAuthor(article.getAuthorId());
-    boolean isFollowing = followRepository.existsByFollowerIdAndFolloweeId(userId, article.getAuthorId());
-    return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author, false, isFollowing)));
+    boolean isFollowing =
+        followRepository.existsByFollowerIdAndFolloweeId(userId, article.getAuthorId());
+    return ResponseEntity.ok(
+        Map.of("article", ArticleResponse.from(article, author, false, isFollowing)));
   }
 
   private List<ArticleResponse> buildArticleResponses(List<Article> articles, Long currentUserId) {
