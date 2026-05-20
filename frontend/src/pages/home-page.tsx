@@ -26,10 +26,15 @@ function HomePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(true);
 
   // Load tags once
   useEffect(() => {
-    getTagsApi().then(setTags).catch(() => {});
+    setTagsLoading(true);
+    getTagsApi()
+      .then(setTags)
+      .catch(() => setTags([]))
+      .finally(() => setTagsLoading(false));
   }, []);
 
   // Reset to appropriate tab when auth state changes
@@ -195,7 +200,11 @@ function HomePage() {
           </div>
 
           <div className="col-md-3">
-            <TagSidebar tags={tags} onTagClick={handleTagClick} />
+            <TagSidebar
+              tags={tags}
+              loading={tagsLoading}
+              onTagClick={handleTagClick}
+            />
           </div>
         </div>
       </div>
@@ -205,9 +214,11 @@ function HomePage() {
 
 function TagSidebar({
   tags,
+  loading,
   onTagClick,
 }: {
   tags: string[];
+  loading: boolean;
   onTagClick: (tag: string) => void;
 }) {
   return (
@@ -215,8 +226,10 @@ function TagSidebar({
       <p id="popular-tags-title" className={styles.sidebarTitle}>
         Popular Tags
       </p>
-      {tags.length === 0 ? (
+      {loading ? (
         <LoadingState label="Loading tags..." size="sm" />
+      ) : tags.length === 0 ? (
+        <p className={styles.sidebarEmpty}>No tags yet.</p>
       ) : (
         <div className={styles.tagListSidebar}>
           {tags.map((tag) => (
