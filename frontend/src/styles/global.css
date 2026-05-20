@@ -16,7 +16,9 @@
   --color-bg-inverse: #fff;
   --color-bg-gray: #f3f3f3;
   --color-bg-light: #f5f5f5;
+  --color-bg-dark: #333;
   --color-border: #ddd;
+  --color-border-soft: #ccc;
   --color-border-light: #e5e5e5;
   --color-sidebar-tag: #818a91;
   --color-sidebar-tag-hover: #687077;

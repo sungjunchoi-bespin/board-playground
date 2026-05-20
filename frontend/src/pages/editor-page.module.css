@@ -14,37 +14,56 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-top: 0.5rem;
+  margin-top: var(--spacing-sm);
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
-  background-color: #818a91;
-  color: #fff;
-  padding: 0.2rem 0.6rem;
-  border-radius: 10rem;
+  background-color: var(--color-sidebar-tag);
+  color: var(--color-bg-inverse);
+  padding: var(--spacing-xs) 0.6rem;
+  border-radius: var(--radius-pill);
   font-size: 0.8rem;
 }
 
 .tagDelete {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--color-bg-inverse);
   cursor: pointer;
   padding: 0;
   margin-right: 0.3rem;
   font-size: 0.8rem;
   line-height: 1;
+  transition: var(--transition-base);
+}
+
+.tagDelete:hover,
+.tagDelete:focus-visible {
+  color: var(--color-danger);
 }
 
 .publishBtn {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
+  transition: var(--transition-base);
 }
 
 .publishBtn:hover,
 .publishBtn:focus {
   background-color: var(--color-primary-dark);
   border-color: var(--color-primary-dark);
+}
+
+.publishBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ─── Responsive: mobile ─── */
+@media (max-width: 768px) {
+  .tagList {
+    margin-top: var(--spacing-xs);
+  }
 }
