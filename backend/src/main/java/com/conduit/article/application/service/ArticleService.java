@@ -14,6 +14,8 @@ import com.conduit.article.domain.port.out.FavoriteRepository;
 import com.conduit.article.domain.port.out.FollowRepository;
 import com.conduit.shared.exception.ApiException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,11 +31,15 @@ public class ArticleService
         FavoriteArticleUseCase,
         UnfavoriteArticleUseCase {
 
+  private static final Logger log = LoggerFactory.getLogger(ArticleService.class);
+
   private final ArticleRepository articleRepository;
   private final FollowRepository followRepository;
   private final FavoriteRepository favoriteRepository;
 
-  public ArticleService(ArticleRepository articleRepository, FollowRepository followRepository,
+  public ArticleService(
+      ArticleRepository articleRepository,
+      FollowRepository followRepository,
       FavoriteRepository favoriteRepository) {
     this.articleRepository = articleRepository;
     this.followRepository = followRepository;
@@ -54,7 +60,9 @@ public class ArticleService
     }
     article.setSlug(slug);
 
-    return articleRepository.save(article);
+    Article saved = articleRepository.save(article);
+    log.info("Article created: slug={}, authorId={}", slug, authorId);
+    return saved;
   }
 
   @Override
@@ -104,6 +112,7 @@ public class ArticleService
     }
 
     articleRepository.delete(article);
+    log.info("Article deleted: slug={}, userId={}", slug, userId);
   }
 
   @Override
