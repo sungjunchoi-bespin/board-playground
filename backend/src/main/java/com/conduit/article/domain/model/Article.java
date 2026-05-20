@@ -112,6 +112,10 @@ public class Article {
     return favoritesCount;
   }
 
+  public void setFavoritesCount(int favoritesCount) {
+    this.favoritesCount = favoritesCount;
+  }
+
   public Instant getCreatedAt() {
     return createdAt;
   }

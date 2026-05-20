@@ -3,11 +3,14 @@ package com.conduit.article.application.service;
 import com.conduit.article.domain.model.Article;
 import com.conduit.article.domain.port.in.CreateArticleUseCase;
 import com.conduit.article.domain.port.in.DeleteArticleUseCase;
+import com.conduit.article.domain.port.in.FavoriteArticleUseCase;
 import com.conduit.article.domain.port.in.FeedArticlesUseCase;
 import com.conduit.article.domain.port.in.GetArticleUseCase;
 import com.conduit.article.domain.port.in.ListArticlesUseCase;
+import com.conduit.article.domain.port.in.UnfavoriteArticleUseCase;
 import com.conduit.article.domain.port.in.UpdateArticleUseCase;
 import com.conduit.article.domain.port.out.ArticleRepository;
+import com.conduit.article.domain.port.out.FavoriteRepository;
 import com.conduit.article.domain.port.out.FollowRepository;
 import com.conduit.shared.exception.ApiException;
 import java.util.List;
@@ -22,14 +25,19 @@ public class ArticleService
         UpdateArticleUseCase,
         DeleteArticleUseCase,
         ListArticlesUseCase,
-        FeedArticlesUseCase {
+        FeedArticlesUseCase,
+        FavoriteArticleUseCase,
+        UnfavoriteArticleUseCase {
 
   private final ArticleRepository articleRepository;
   private final FollowRepository followRepository;
+  private final FavoriteRepository favoriteRepository;
 
-  public ArticleService(ArticleRepository articleRepository, FollowRepository followRepository) {
+  public ArticleService(ArticleRepository articleRepository, FollowRepository followRepository,
+      FavoriteRepository favoriteRepository) {
     this.articleRepository = articleRepository;
     this.followRepository = followRepository;
+    this.favoriteRepository = favoriteRepository;
   }
 
   @Override
@@ -129,5 +137,33 @@ public class ArticleService
       return 0;
     }
     return articleRepository.countByAuthorIds(followeeIds);
+  }
+
+  @Override
+  public Article favorite(String slug, Long userId) {
+    Article article =
+        articleRepository
+            .findBySlug(slug)
+            .orElseThrow(() -> new ApiException.NotFoundException("article not found"));
+
+    if (!favoriteRepository.existsByUserIdAndArticleId(userId, article.getId())) {
+      favoriteRepository.save(userId, article.getId());
+    }
+
+    article.setFavoritesCount(favoriteRepository.countByArticleId(article.getId()));
+    return articleRepository.save(article);
+  }
+
+  @Override
+  public Article unfavorite(String slug, Long userId) {
+    Article article =
+        articleRepository
+            .findBySlug(slug)
+            .orElseThrow(() -> new ApiException.NotFoundException("article not found"));
+
+    favoriteRepository.delete(userId, article.getId());
+
+    article.setFavoritesCount(favoriteRepository.countByArticleId(article.getId()));
+    return articleRepository.save(article);
   }
 }

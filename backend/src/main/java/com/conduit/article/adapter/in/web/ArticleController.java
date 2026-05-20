@@ -3,9 +3,11 @@ package com.conduit.article.adapter.in.web;
 import com.conduit.article.domain.model.Article;
 import com.conduit.article.domain.port.in.CreateArticleUseCase;
 import com.conduit.article.domain.port.in.DeleteArticleUseCase;
+import com.conduit.article.domain.port.in.FavoriteArticleUseCase;
 import com.conduit.article.domain.port.in.FeedArticlesUseCase;
 import com.conduit.article.domain.port.in.GetArticleUseCase;
 import com.conduit.article.domain.port.in.ListArticlesUseCase;
+import com.conduit.article.domain.port.in.UnfavoriteArticleUseCase;
 import com.conduit.article.domain.port.in.UpdateArticleUseCase;
 import com.conduit.article.domain.port.out.FavoriteRepository;
 import com.conduit.article.domain.port.out.FollowRepository;
@@ -41,6 +43,8 @@ public class ArticleController {
   private final DeleteArticleUseCase deleteArticleUseCase;
   private final ListArticlesUseCase listArticlesUseCase;
   private final FeedArticlesUseCase feedArticlesUseCase;
+  private final FavoriteArticleUseCase favoriteArticleUseCase;
+  private final UnfavoriteArticleUseCase unfavoriteArticleUseCase;
   private final UserRepository userRepository;
   private final FavoriteRepository favoriteRepository;
   private final FollowRepository followRepository;
@@ -52,6 +56,8 @@ public class ArticleController {
       DeleteArticleUseCase deleteArticleUseCase,
       ListArticlesUseCase listArticlesUseCase,
       FeedArticlesUseCase feedArticlesUseCase,
+      FavoriteArticleUseCase favoriteArticleUseCase,
+      UnfavoriteArticleUseCase unfavoriteArticleUseCase,
       UserRepository userRepository,
       FavoriteRepository favoriteRepository,
       FollowRepository followRepository) {
@@ -61,6 +67,8 @@ public class ArticleController {
     this.deleteArticleUseCase = deleteArticleUseCase;
     this.listArticlesUseCase = listArticlesUseCase;
     this.feedArticlesUseCase = feedArticlesUseCase;
+    this.favoriteArticleUseCase = favoriteArticleUseCase;
+    this.unfavoriteArticleUseCase = unfavoriteArticleUseCase;
     this.userRepository = userRepository;
     this.favoriteRepository = favoriteRepository;
     this.followRepository = followRepository;
@@ -138,6 +146,26 @@ public class ArticleController {
     Long userId = (Long) authentication.getPrincipal();
     deleteArticleUseCase.delete(slug, userId);
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/articles/{slug}/favorite")
+  public ResponseEntity<Map<String, ArticleResponse>> favoriteArticle(
+      Authentication authentication, @PathVariable String slug) {
+    Long userId = (Long) authentication.getPrincipal();
+    Article article = favoriteArticleUseCase.favorite(slug, userId);
+    User author = findAuthor(article.getAuthorId());
+    boolean isFollowing = followRepository.existsByFollowerIdAndFolloweeId(userId, article.getAuthorId());
+    return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author, true, isFollowing)));
+  }
+
+  @DeleteMapping("/articles/{slug}/favorite")
+  public ResponseEntity<Map<String, ArticleResponse>> unfavoriteArticle(
+      Authentication authentication, @PathVariable String slug) {
+    Long userId = (Long) authentication.getPrincipal();
+    Article article = unfavoriteArticleUseCase.unfavorite(slug, userId);
+    User author = findAuthor(article.getAuthorId());
+    boolean isFollowing = followRepository.existsByFollowerIdAndFolloweeId(userId, article.getAuthorId());
+    return ResponseEntity.ok(Map.of("article", ArticleResponse.from(article, author, false, isFollowing)));
   }
 
   private List<ArticleResponse> buildArticleResponses(List<Article> articles, Long currentUserId) {

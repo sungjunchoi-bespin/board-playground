@@ -12,4 +12,6 @@ public interface FavoriteJpaRepository extends JpaRepository<FavoriteJpaEntity, 
   @Query("SELECT f.articleId FROM FavoriteJpaEntity f WHERE f.userId = :userId AND f.articleId IN :articleIds")
   List<Long> findArticleIdsByUserIdAndArticleIdIn(
       @Param("userId") Long userId, @Param("articleIds") List<Long> articleIds);
+
+  int countByArticleId(Long articleId);
 }
