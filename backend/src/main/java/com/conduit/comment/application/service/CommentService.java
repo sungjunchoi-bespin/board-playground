@@ -7,57 +7,70 @@ import com.conduit.comment.domain.port.in.DeleteCommentUseCase;
 import com.conduit.comment.domain.port.in.ListCommentsUseCase;
 import com.conduit.comment.domain.port.out.CommentRepository;
 import com.conduit.shared.exception.ApiException;
-
+import java.time.Instant;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.List;
-
 @Service
 @Transactional(readOnly = true)
-public class CommentService implements AddCommentUseCase, ListCommentsUseCase, DeleteCommentUseCase {
+public class CommentService
+    implements AddCommentUseCase, ListCommentsUseCase, DeleteCommentUseCase {
 
-    private final CommentRepository commentRepository;
-    private final ArticleRepository articleRepository;
+  private static final Logger log = LoggerFactory.getLogger(CommentService.class);
 
-    public CommentService(CommentRepository commentRepository, ArticleRepository articleRepository) {
-        this.commentRepository = commentRepository;
-        this.articleRepository = articleRepository;
+  private final CommentRepository commentRepository;
+  private final ArticleRepository articleRepository;
+
+  public CommentService(CommentRepository commentRepository, ArticleRepository articleRepository) {
+    this.commentRepository = commentRepository;
+    this.articleRepository = articleRepository;
+  }
+
+  @Override
+  @Transactional
+  public Comment addComment(String slug, String body, Long authorId) {
+    var article =
+        articleRepository
+            .findBySlug(slug)
+            .orElseThrow(() -> new ApiException.NotFoundException("Article not found"));
+
+    var comment = new Comment(null, body, article.getId(), authorId, Instant.now(), Instant.now());
+    Comment saved = commentRepository.save(comment);
+    log.info("Comment added: articleSlug={}, authorId={}", slug, authorId);
+    return saved;
+  }
+
+  @Override
+  public List<Comment> listComments(String slug) {
+    var article =
+        articleRepository
+            .findBySlug(slug)
+            .orElseThrow(() -> new ApiException.NotFoundException("Article not found"));
+
+    return commentRepository.findByArticleId(article.getId());
+  }
+
+  @Override
+  @Transactional
+  public void deleteComment(String slug, Long commentId, Long currentUserId) {
+    // Verify article exists
+    articleRepository
+        .findBySlug(slug)
+        .orElseThrow(() -> new ApiException.NotFoundException("Article not found"));
+
+    var comment =
+        commentRepository
+            .findById(commentId)
+            .orElseThrow(() -> new ApiException.NotFoundException("Comment not found"));
+
+    if (!comment.authorId().equals(currentUserId)) {
+      throw new ApiException.ForbiddenException("You cannot delete this comment");
     }
 
-    @Override
-    @Transactional
-    public Comment addComment(String slug, String body, Long authorId) {
-        var article = articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new ApiException.NotFoundException("Article not found"));
-
-        var comment = new Comment(null, body, article.getId(), authorId, Instant.now(), Instant.now());
-        return commentRepository.save(comment);
-    }
-
-    @Override
-    public List<Comment> listComments(String slug) {
-        var article = articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new ApiException.NotFoundException("Article not found"));
-
-        return commentRepository.findByArticleId(article.getId());
-    }
-
-    @Override
-    @Transactional
-    public void deleteComment(String slug, Long commentId, Long currentUserId) {
-        // Verify article exists
-        articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new ApiException.NotFoundException("Article not found"));
-
-        var comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new ApiException.NotFoundException("Comment not found"));
-
-        if (!comment.authorId().equals(currentUserId)) {
-            throw new ApiException.ForbiddenException("You cannot delete this comment");
-        }
-
-        commentRepository.deleteById(commentId);
-    }
+    commentRepository.deleteById(commentId);
+    log.info("Comment deleted: id={}, userId={}", commentId, currentUserId);
+  }
 }

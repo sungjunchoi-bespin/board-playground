@@ -7,6 +7,8 @@ import com.conduit.user.domain.port.in.LoginUserUseCase;
 import com.conduit.user.domain.port.in.RegisterUserUseCase;
 import com.conduit.user.domain.port.in.UpdateUserUseCase;
 import com.conduit.user.domain.port.out.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UserService
     implements RegisterUserUseCase, LoginUserUseCase, GetCurrentUserUseCase, UpdateUserUseCase {
+
+  private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -34,39 +38,49 @@ public class UserService
     }
 
     User user = User.create(email, username, passwordEncoder.encode(password));
-    return userRepository.save(user);
+    User saved = userRepository.save(user);
+    log.info("User registered: username={}", username);
+    return saved;
   }
 
   @Override
   @Transactional(readOnly = true)
   public User login(String email, String password) {
-    User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new ApiException.UnauthorizedException("invalid email or password"));
+    User user =
+        userRepository
+            .findByEmail(email)
+            .orElseThrow(() -> new ApiException.UnauthorizedException("invalid email or password"));
 
     if (!passwordEncoder.matches(password, user.getPassword())) {
+      log.warn("Login failed: invalid password for email={}", email);
       throw new ApiException.UnauthorizedException("invalid email or password");
     }
 
+    log.info("User logged in: email={}", email);
     return user;
   }
 
   @Override
   @Transactional(readOnly = true)
   public User getCurrentUser(Long userId) {
-    return userRepository.findById(userId)
+    return userRepository
+        .findById(userId)
         .orElseThrow(() -> new ApiException.NotFoundException("user not found"));
   }
 
   @Override
-  public User update(Long userId, String email, String username, String password, String bio,
-      String image) {
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new ApiException.NotFoundException("user not found"));
+  public User update(
+      Long userId, String email, String username, String password, String bio, String image) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ApiException.NotFoundException("user not found"));
 
     if (email != null && !email.equals(user.getEmail()) && userRepository.existsByEmail(email)) {
       throw new ApiException.ValidationException("email has already been taken");
     }
-    if (username != null && !username.equals(user.getUsername())
+    if (username != null
+        && !username.equals(user.getUsername())
         && userRepository.existsByUsername(username)) {
       throw new ApiException.ValidationException("username has already been taken");
     }
