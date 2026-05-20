@@ -93,3 +93,6 @@ frontend/test-results/
 
 # TypeScript incremental build info (regenerated on build)
 frontend/tsconfig.tsbuildinfo
+
+# code-explainer plugin runtime output (uploaded to Discussion/Wiki, not tracked)
+code-explainer-plugin/output/

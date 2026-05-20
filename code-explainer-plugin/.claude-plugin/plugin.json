@@ -1,0 +1,7 @@
+{
+  "name": "code-explainer",
+  "description": "코드를 3단계 스캐폴딩(L1/L2/L3)으로 분석하여 GitHub Discussion에 적재하는 플러그인",
+  "author": {
+    "name": "Sungjun Choi"
+  }
+}
