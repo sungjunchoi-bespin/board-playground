@@ -535,6 +535,8 @@ subprocess.run(["git", "clone", wiki_url, wiki_dir], check=True)
 
 생성된 L1/L2/L3 본문을 각각 위 명명 규칙에 따라 `wiki_dir`에 저장합니다.
 
+> **헤더 정책 (중복 H1 회피)**: 본문 원본이 `## 🏗️ ...` 같은 H2로 시작한다면 그 줄을 제거하고 wiki 페이지 첫 줄에 `# {title}` H1을 *단 한 번만* 넣습니다. 두 헤더가 모두 살아 있으면 GitHub Wiki UI에서 같은 제목이 두 번 노출됩니다.
+
 ```python
 def slugify_path(path: str) -> str:
     """디렉토리 경로/파일명을 wiki 안전 파일명으로 변환"""
@@ -543,65 +545,76 @@ def slugify_path(path: str) -> str:
     s = re.sub(r'[<>:"|?*]', "_", s)
     return s.strip("-")
 
-def write_page(filename: str, body: str):
+def write_page(filename: str, title: str, body: str):
+    # 원본 첫 줄이 `## ...` H2면 제거 — H1으로 통일
+    lines = body.splitlines()
+    if lines and lines[0].startswith("## "):
+        body = "\n".join(lines[1:]).lstrip("\n")
+    full = f"# {title}\n\n{body}"
     path = os.path.join(wiki_dir, filename)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(body)
+        f.write(full)
 
 # L1 (1개)
-write_page(f"L1-{PROJECT_NAME}.md", l1_body)
+write_page(f"L1-{PROJECT_NAME}.md", l1_title, l1_body)
 
 # L2 (디렉토리마다 1개)
 for pkg_path, body in l2_pages.items():
-    write_page(f"L2-{slugify_path(pkg_path)}.md", body)
+    write_page(f"L2-{slugify_path(pkg_path)}.md", f"📦 {pkg_path}", body)
 
 # L3 (소스 파일마다 1개)
 for src_path, body in l3_pages.items():
-    write_page(f"L3-{slugify_path(src_path)}.md", body)
+    write_page(f"L3-{slugify_path(src_path)}.md", f"🔬 {src_path}", body)
 ```
 
 ### Step 3 · Home.md & _Sidebar.md 생성
 
 평면 구조에서도 탐색 가능하도록 진입 페이지와 좌측 네비를 동시에 만듭니다.
 
+> **링크 문법 정책 (BLOCK)**: Gollum의 `[[Page|Display]]` 문법은 GitHub Wiki 사이드바에서 종종 렌더에 실패합니다 (히스토리상 사용자 보고됨). 따라서 **표준 markdown link `[Display](Page)` 형식을 사용**합니다. `Page` 부분은 wiki 파일명 (확장자 없음, 같은 wiki 내 상대 경로).
+
 ```python
-# Home.md — 진입 페이지
-home_body = f"""# {PROJECT_NAME}
+def link(display: str, page: str) -> str:
+    """표준 markdown wiki link — Gollum [[X|Y]] 대신 사용 (BLOCK)."""
+    return f"[{display}]({page})"
 
-> code-explainer 자동 생성 학습 문서. 좌측 사이드바에서 L1/L2/L3을 탐색하세요.
-
-## 🏗️ L1 · Architecture
-- [[L1-{PROJECT_NAME}]]
-
-## 📦 L2 · Modules
-"""
+# Home.md — 진입 페이지 (직접 작성 — write_page 안 거침: 자체 H1 제어)
+home_lines = [
+    f"# {PROJECT_NAME}\n\n",
+    "> code-explainer 자동 생성 학습 문서. 좌측 사이드바 또는 아래 목록에서 L1/L2/L3을 탐색하세요.\n\n",
+    "## 🏗️ L1 · Architecture\n\n",
+    f"- {link(l1_title.replace('🏗️ ', ''), f'L1-{PROJECT_NAME}')}\n",
+    "\n## 📦 L2 · Modules\n\n",
+]
 for pkg_path in sorted(l2_pages.keys()):
-    home_body += f"- [[L2-{slugify_path(pkg_path)}]] — `{pkg_path}`\n"
+    home_lines.append(f"- {link(pkg_path, f'L2-{slugify_path(pkg_path)}')}\n")
 
-home_body += "\n## 🔬 L3 · Code\n"
+home_lines.append("\n## 🔬 L3 · Code\n\n")
 for src_path in sorted(l3_pages.keys()):
-    home_body += f"- [[L3-{slugify_path(src_path)}]] — `{src_path}`\n"
+    home_lines.append(f"- {link(src_path, f'L3-{slugify_path(src_path)}')}\n")
 
-write_page("Home.md", home_body)
+with open(os.path.join(wiki_dir, "Home.md"), "w", encoding="utf-8") as f:
+    f.write("".join(home_lines))
 
 # _Sidebar.md — 좌측 네비 (모든 페이지에 자동 표시)
-sidebar_body = f"""**🏗️ Architecture**
-- [[L1-{PROJECT_NAME}]]
-
-**📦 Modules (L2)**
-"""
+sidebar_lines = [
+    "**🏗️ Architecture**\n\n",
+    f"- {link(l1_title.replace('🏗️ ', ''), f'L1-{PROJECT_NAME}')}\n",
+    "\n**📦 Modules (L2)**\n\n",
+]
 for pkg_path in sorted(l2_pages.keys()):
-    sidebar_body += f"- [[L2-{slugify_path(pkg_path)}|{pkg_path}]]\n"
+    sidebar_lines.append(f"- {link(pkg_path, f'L2-{slugify_path(pkg_path)}')}\n")
 
-sidebar_body += "\n**🔬 Code (L3)**\n"
+sidebar_lines.append("\n**🔬 Code (L3)**\n\n")
 for src_path in sorted(l3_pages.keys()):
     label = src_path.split("/")[-1]  # 파일명만 표시
-    sidebar_body += f"- [[L3-{slugify_path(src_path)}|{label}]]\n"
+    sidebar_lines.append(f"- {link(label, f'L3-{slugify_path(src_path)}')}\n")
 
-write_page("_Sidebar.md", sidebar_body)
+with open(os.path.join(wiki_dir, "_Sidebar.md"), "w", encoding="utf-8") as f:
+    f.write("".join(sidebar_lines))
 ```
 
-> `[[페이지명]]` 또는 `[[표시텍스트|페이지명]]` 형식이 GitHub Wiki의 internal link 문법입니다.
+> **링크 검증**: push 직후 `curl -sI {wiki_base}/L1-{PROJECT_NAME}` 등으로 직접 URL이 200을 반환하는지 확인. 페이지 본문은 정상이지만 사이드바 링크가 깨지는 케이스(Gollum 문법 실패)를 미리 감지.
 
 ### Step 4 · 커밋 & 푸시
 
